@@ -1,35 +1,85 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import IconCommunity from "@/assets/images/IconCommunity";
+import IconHome from "@/assets/images/IconHome";
+import IconLibrary from "@/assets/images/IconLibrary";
+import { useTheme } from "@/context/ThemeContext";
+import { Tabs } from "expo-router";
+import { Text, View } from "react-native";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+export default function tabLayout() {
+    const { theme } = useTheme();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+    return (
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: theme.colors.accent,
+                tabBarInactiveTintColor: theme.colors.muted,
 
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+                tabBarLabelStyle: {
+                    fontSize: 12
+                },
+
+                tabBarStyle: {
+                    backgroundColor: theme.colors.background,
+                    borderTopWidth: 0,
+                    elevation: 0,
+                    shadowOpacity: 0,
+                },
+
+                tabBarLabel: ({ focused, color, children }) => (
+                    <View style={{ alignItems: 'center' }}>
+                        <Text
+                            style={{
+                                color,
+                                fontSize: 12,
+                                fontFamily: focused ? theme.text.bold.fontFamily : theme.text.regular.fontFamily,
+                                paddingBottom: 4,
+                            }}
+
+                        >
+                            {children}
+                        </Text>
+
+                        {focused && (
+                            <View
+                                style={{
+                                    width: 30, 
+                                    height: 4,
+                                    borderRadius: 2,
+                                    backgroundColor: theme.colors.accent,
+                                    marginTop: 2,
+                                }}
+                            />
+                        )}
+                    </View>
+
+                ),
+            }}
+        >
+            <Tabs.Screen
+                name="Library"
+                options={{
+                    title: "Бібліотека",
+                    tabBarIcon: ({ color, size }) => <IconLibrary stroke={color} width={size} height={size} />
+                }}
+
+            />
+
+            <Tabs.Screen
+                name="Home"
+                options={{
+                    title: "Слухати",
+                    tabBarIcon: ({ color, size }) => <IconHome fill={color} width={size} height={size} />
+                }}
+            />
+
+            <Tabs.Screen
+                name="Community"
+                options={{
+                    title: "Спільнота",
+                    tabBarIcon: ({ color, size }) => <IconCommunity stroke={color} width={size} height={size} />
+                }}
+            />
+        </Tabs>
+    )
 }
