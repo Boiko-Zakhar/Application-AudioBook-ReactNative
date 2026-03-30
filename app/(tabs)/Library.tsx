@@ -1,13 +1,11 @@
-import { useAudioPlayer } from 'expo-audio'; // Імпорт плеєра
+import { useTheme } from "@/context/ThemeContext";
+import { useAudioPlayer } from 'expo-audio';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Button, IconButton } from "react-native-paper";
-
-// Імпорти з вашого проекту
-import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from 'expo-router';
 import { Book, useLibrary } from "../src/features/home/hook/useLibrary";
-// Перевірте, чи правильний шлях до компонента PlayerControls
 
 export default function Library() {
   const { theme } = useTheme();
@@ -57,7 +55,7 @@ export default function Library() {
   }, [player]);
 
   const router = useRouter(); // 2. Ініціалізуємо роутер
-  
+
   const openPlayer = (book: Book) => {
     // 3. Переходимо на екран плеєра і передаємо дані книги
     // Ми перетворюємо об'єкт на рядок JSON, щоб безпечно передати його через URL
@@ -72,7 +70,14 @@ export default function Library() {
       {/* Хедер і кнопка додавання (без змін) */}
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.text.regular.color }]}>Моя Бібліотека</Text>
-        <Button mode="contained" onPress={addBook} icon="plus">Додати</Button>
+        <Button
+          style={{ backgroundColor: theme.colors.accent }}
+          textColor={theme.colors.background}
+          mode="contained" onPress={addBook}
+          icon="plus"
+        >
+          Додати
+        </Button>
       </View>
 
       <FlatList
@@ -81,11 +86,14 @@ export default function Library() {
         renderItem={({ item }) => (
           <View style={styles.bookItemWrapper}>
             <TouchableOpacity
-              style={[styles.bookItem, { backgroundColor: theme.text.muted.color || '#e0e0e0' }]}
-              onPress={() => openPlayer(item)} // 4. Викликаємо навігацію при кліку
+              style={[styles.bookItem, { backgroundColor: `${theme.colors.muted}80` || '#e0e0e0' }]}
+              onPress={() => openPlayer(item)}
             >
               <View style={styles.iconContainer}>
-                <Text style={{ fontSize: 24 }}>📖</Text>
+                <Image
+                  source={item.image ? { uri: item.image } : ''}
+                  style={styles.imageBook}
+                />
               </View>
               <View style={styles.bookInfo}>
                 <Text numberOfLines={1} style={[styles.bookTitle, { color: theme.text.regular.color }]}>
@@ -105,34 +113,40 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  imageBook: {
+    width: 124,
+    height: 124,
+    borderTopStartRadius: 8,
+    borderBottomLeftRadius: 8,
+    backgroundColor: '#ccc'
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    marginTop: 40, // Відступ для статусбару
+    marginTop: 35,
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
   bookItemWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     marginBottom: 10,
   },
   bookItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
   },
+
   iconContainer: { marginRight: 15 },
   bookInfo: { flex: 1 },
   bookTitle: { fontSize: 16, fontWeight: '600' },
   emptyState: { alignItems: 'center', marginTop: 50 },
 
-  // Стилі для плеєра знизу
   playerContainer: {
     position: 'absolute',
     bottom: 0,

@@ -18,7 +18,7 @@ interface PlayerControlsProps {
     theme: any;
     chapters: ChapterItem[];
     currentChapterIndex: number;
-    rate: number; 
+    rate: number;
     onChangeSpeed: () => void;
     onChapterSelect: (index: number) => void;
     onSeek: (value: number) => void;
@@ -34,7 +34,7 @@ export const PlayerControls = ({
     theme,
     chapters = [],
     currentChapterIndex,
-    rate = 1.0, 
+    rate = 1.0,
     onChangeSpeed,
     onChapterSelect,
     onSeek,
@@ -158,11 +158,11 @@ export const PlayerControls = ({
                             />
                         </Modal>
                     </Portal>
-                    <Button 
-                    icon="chevron-down" 
-                    contentStyle={{ flexDirection: 'row-reverse' }}
-                    textColor={theme.colors.textBlack} 
-                    onPress={showModal}
+                    <Button
+                        icon="chevron-down"
+                        contentStyle={{ flexDirection: 'row-reverse' }}
+                        textColor={theme.colors.textBlack}
+                        onPress={showModal}
                     >
                         {chapters[currentChapterIndex]?.title || 'Виберіть розділ'}
                     </Button>
@@ -183,11 +183,23 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         paddingRight: 20
     },
-    timeManagement: { flexDirection: 'row', justifyContent: 'space-between' },
-    leftGrupBtt: { flexDirection: 'row', gap: 21 },
-    rightsGrupBtt: { flexDirection: 'row', gap: 21 },
-    midlBtt: {},
-    bttGrup: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+    timeManagement: {
+        flexDirection: 'row',
+        justifyContent: 'space-between'
+    },
+    leftGrupBtt: {
+        flexDirection: 'row',
+        gap: 21
+    },
+    rightsGrupBtt: {
+        flexDirection: 'row',
+        gap: 21
+    },
+    bttGrup: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+    },
     timeSlider: { marginTop: 15, justifyContent: 'center', alignItems: 'center', gap: 8 },
     slider: { width: '69%', height: 10, transform: [{ scaleY: 1.6 }, { scaleX: 1.6 }] },
     time: { width: 320, flexDirection: 'row', justifyContent: 'space-between' },

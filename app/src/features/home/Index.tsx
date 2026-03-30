@@ -16,10 +16,9 @@ import { Text } from 'react-native-paper';
 import { BookCover } from './components/BookCover';
 import { HomeHeader } from './components/HomeHeader';
 import { PlayerControls } from './components/PlayerControls';
+import type { Book } from './hook/useLibrary';
 
-// --- ТИПИ ---
-interface Chapter { id: string; title: string; uri: string; }
-interface Book { id: string; title: string; chapters: Chapter[]; }
+
 
 interface IconProps {
     width: number;
@@ -35,8 +34,6 @@ interface IconItem {
     activeFill: string;
     onPress: () => void;
 }
-
-// --- КОМПОНЕНТИ ---
 
 const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters }: any) => (
     <View pointerEvents="none" style={styles.brogresBarBook}>
@@ -55,7 +52,6 @@ const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters }: a
             thumbTintColor="transparent"
         />
 
-        {/* Інформація про глави */}
         <Text style={theme.text.green}>
             Глава {(chapterIndex || 0) + 1} з {totalChapters || 0}
         </Text>
@@ -65,49 +61,38 @@ const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters }: a
 const HomeScreen = () => {
     const { theme } = useTheme();
 
-    // 1. Отримуємо дані книгиі
     const { bookData } = useLocalSearchParams();
     const book: Book | null = bookData ? JSON.parse(bookData as string) : null;
 
-    // 2. СТАН: Номер поточної глави
     const [chapterIndex, setChapterIndex] = useState(0);
     const currentChapter = book?.chapters?.[chapterIndex];
 
     const [initialSeekTime, setInitialSeekTime] = useState<number | null>(null);
     const [isLoadingProgress, setIsLoadingProgress] = useState(true);
 
-    // 3. ПЛЕЄР: Ініціалізація
     const player = useAudioPlayer(currentChapter?.uri || '');
 
-    // 👇 1. СТАН ДЛЯ ШВИДКОСТІ
     const [speed, setSpeed] = useState(1.0);
 
-    // 4. 🔥 СТАТУС: Цей хук замінює всі setInterval і ручні стани часу
     const status = useAudioPlayerStatus(player);
     const [activeIcons, setActiveIcons] = useState<Record<string, boolean>>({});
 
-
-
-    // Налаштування аудіо режиму
     useEffect(() => {
         setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     }, []);
 
-    // 5. АВТОПЕРЕМИКАННЯ ГЛАВ
     useEffect(() => {
         if (status.didJustFinish) {
             handleNextChapter();
         }
     }, [status.didJustFinish]);
 
-    // Авто-старт при зміні глави (окрім першої, якщо потрібно)
     useEffect(() => {
         if (chapterIndex > 0 && !player.playing && status.isLoaded) {
             player.play();
         }
     }, [chapterIndex, status.isLoaded]);
 
-    // 1. ЗАВАНТАЖЕННЯ збереженої глави при відкритті книги
     useEffect(() => {
         const loadProgress = async () => {
             if (!book?.id) {
@@ -130,7 +115,6 @@ const HomeScreen = () => {
             } catch (e) {
                 console.error("Помилка завантаження прогресу", e);
             } finally {
-                // Даємо сигнал, що ми закінчили читати з пам'яті
                 setIsLoadingProgress(false);
             }
         };
@@ -151,8 +135,6 @@ const HomeScreen = () => {
         }
 
     }, [status.isLoaded, initialSeekTime, isLoadingProgress]);
-
-    // 2. ЗБЕРЕЖЕННЯ глави при кожній зміні
 
     const lastSavedTime = useRef(0);
 
@@ -185,12 +167,9 @@ const HomeScreen = () => {
         }
     }, [chapterIndex, book?.id, isLoadingProgress, status.currentTime]);
 
-    // 🟢 ВСТАВИТИ ЦЕЙ БЛОК
     useEffect(() => {
-        // Чекаємо, поки файл дійсно завантажиться (isLoaded = true)
         if (!player || !status.isLoaded) return;
 
-        // Перевіряємо, чи треба змінювати швидкість, щоб не робити зайвих викликів
         if (Math.abs(player.playbackRate - speed) > 0.05) {
             try {
                 player.setPlaybackRate(speed);
@@ -198,19 +177,16 @@ const HomeScreen = () => {
                 console.warn("Не вдалося встановити швидкість:", e);
             }
         }
-    }, [status.isLoaded, player, speed]); // Додали status.isLoaded у залежності
-
-    // --- ЛОГІКА КЕРУВАННЯ ---
+    }, [status.isLoaded, player, speed]); 
 
     const handleChangeSpeed = () => {
         const speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
         const currentIndex = speeds.indexOf(speed);
-        const nextIndex = (currentIndex + 1) % speeds.length; // Ходимо по колу
+        const nextIndex = (currentIndex + 1) % speeds.length;
         const newSpeed = speeds[nextIndex];
 
         setSpeed(newSpeed);
 
-        // Встановлюємо швидкість плеєру
         if (player) {
             player.setPlaybackRate(newSpeed);
         }
@@ -276,7 +252,6 @@ const HomeScreen = () => {
         { id: 'bookmark', Icon: IconBookmark, ActiveIcon: IconBookmark, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Bookmark pressed') },
     ];
 
-    // Якщо книги немає - показуємо заглушку (щоб не було помилок null)
     if (!book) {
         return (
             <View style={[styles.container, { backgroundColor: theme.colors.background, justifyContent: 'center' }]}>
@@ -302,7 +277,7 @@ const HomeScreen = () => {
             />
 
             <BookCover
-                imageSource={require('@/assets/images/frame.png')}
+                imageSource={book ? book.image : require('@/assets/images/frame.png')}
                 accentColor={theme.colors.accent}
                 isPlaying={status.playing}
                 onTogglePlay={handleTogglePlay}

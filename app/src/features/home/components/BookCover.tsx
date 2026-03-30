@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import { IconButton, TouchableRipple } from 'react-native-paper';
 
 interface BookCoverProps {
@@ -26,7 +26,7 @@ export const BookCover = ({
             <View style={styles.imageBook} >
                 <Image
                     source={imageSource}
-                    style={{ width: '100%', height: '100%', borderRadius: 10 }}
+                    style={{ width: '100%', height: '95%', borderRadius: 10 }}
                 />
                 <IconButton
                     style={styles.overlayButton}
@@ -40,12 +40,17 @@ export const BookCover = ({
     );
 };
 
+const { width } = Dimensions.get('window');
+
+const IMAGE_WIDTH = width * 0.9; 
+const IMAGE_HEIGHT = IMAGE_WIDTH * (420 / 375);
+
 const styles = StyleSheet.create({
     imageBook: {
         position: 'relative',
         marginTop: 15,
         width: 375,
-        height: 420,
+        height: IMAGE_HEIGHT,
         marginBottom: 15,
     },
     overlayButton: {

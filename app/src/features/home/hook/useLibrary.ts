@@ -1,8 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Buffer, } from 'buffer';
+import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
-import { useEffect, useState } from 'react';
-// Імпортуємо нові класи для роботи з файлами
 import { Directory, File, Paths } from 'expo-file-system';
+import { useEffect, useState } from 'react';
+
+const jsmediatags = require('jsmediatags/dist/jsmediatags.min.js');
 
 // Структура: Глава
 export interface Chapter {
@@ -15,8 +18,38 @@ export interface Chapter {
 export interface Book {
     id: string;
     title: string;
+    image: string | null;
     chapters: Chapter[];
 }
+
+const getAlbumArt = async (fileUri: string): Promise<string | null> => {
+    try {
+        const audioFile = new File(fileUri);
+
+        const arrayBuffer = await audioFile.arrayBuffer();
+        const dataArray = Buffer.from(arrayBuffer);
+
+        return new Promise((resolve) => {
+            new jsmediatags.Reader(dataArray).read({
+                onSuccess: (tag: any) => {
+                    const picture = tag.tags.picture;
+                    if (!picture) return resolve(null);
+
+                    const { data, format } = picture;
+                    const base64Img = Buffer.from(data).toString('base64');
+                    resolve(`data:${format};base64,${base64Img}`);
+                },
+                onError: (error: any) => {
+                    console.log('ID3 Error:', error);
+                    resolve(null);
+                }
+            });
+        });
+    } catch (e) {
+        console.error("Не вдалося обробити файл через новий API:", e);
+        return null;
+    }
+};
 
 export const useLibrary = () => {
     const [books, setBooks] = useState<Book[]>([]);
@@ -54,62 +87,64 @@ export const useLibrary = () => {
     const addBook = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: '*/*', // Дозволяємо всі файли (щоб уникнути глюків з Google Drive)
+                type: 'audio/*', // Дозволяємо всі файли (щоб уникнути глюків з Google Drive)
                 multiple: true,
-                copyToCacheDirectory: true, 
+                copyToCacheDirectory: true,
             });
 
             if (result.canceled || !result.assets || result.assets.length === 0) return;
 
-            // Сортуємо (01, 02, 03...)
             const sortedAssets = result.assets.sort((a, b) =>
                 a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
             );
 
             // Створюємо папку книги
-            const bookId = Date.now().toString();
+            const bookId = Crypto.randomUUID();
             const bookFolderName = `Book_${bookId}`;
             const bookDir = new Directory(libraryDir.uri, bookFolderName);
 
             if (!bookDir.exists) await bookDir.create();
 
             const newChapters: Chapter[] = [];
+            let albumArt: string | null = null;
 
-            for (const fileAsset of sortedAssets) {
-                // Очищаємо ім'я файлу
-                const safeName = fileAsset.name.replace(/\s+/g, '_');
+            for (let i = 0; i < sortedAssets.length; i++) {
+                const asset = sortedAssets[i];
+                const safeName = asset.name.replace(/[^a-z0-9._-]/gi, '_');
+                
+                const sourceFile = new File(asset.uri);
+                const destFile = new File(bookDir, safeName);
 
-                const sourceFile = new File(fileAsset.uri); // Кеш
-                const destFile = new File(bookDir, safeName); // Постійна пам'ять
-
-                // Переміщуємо файл (move), щоб зекономити місце
                 await sourceFile.move(destFile);
 
+                if (i === 0) {
+                    albumArt = await getAlbumArt(destFile.uri);
+                }
+
                 newChapters.push({
-                    id: safeName,
-                    title: fileAsset.name.replace(/\.[^/.]+$/, ""), // Назва без розширення
+                    id: Crypto.randomUUID(),
+                    title: asset.name.replace(/\.[^/.]+$/, ""),
                     uri: destFile.uri
                 });
             }
 
-            // 👇 ОСЬ ЦЬОГО НЕ ВИСТАЧАЛО У ВАС 👇
-            
-            // 1. Формуємо назву книги (беремо з першого файлу, чистимо від цифр)
             const firstFileName = newChapters[0].title;
-            const bookTitle = firstFileName.replace(/[0-9-_]/g, ' ').trim() || firstFileName;
+            const bookTitle = firstFileName
+                .replace(/(глава|chapter|пролог|prologue|частина|part|розділ)/gi, ' ')
+                .replace(/[0-9-_]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim() || firstFileName;
 
-            // 2. Створюємо об'єкт книги
             const newBook: Book = {
                 id: bookId,
                 title: bookTitle.length > 0 ? bookTitle : "Нова аудіокнига",
+                image: albumArt, 
                 chapters: newChapters,
             };
 
-            // 3. Оновлюємо список
             const updatedBooks = [...books, newBook];
             setBooks(updatedBooks);
-            
-            // 4. Зберігаємо в пам'ять телефону
+
             await AsyncStorage.setItem('myBooks', JSON.stringify(updatedBooks));
 
             console.log(`Успішно додано: ${newBook.title} (${newChapters.length} глав)`);
