@@ -5,7 +5,7 @@ import { Dimensions, StyleSheet, View } from 'react-native';
 import { IconButton, TouchableRipple } from 'react-native-paper';
 
 interface BookCoverProps {
-    imageSource: any;
+    imageSource: string;
     accentColor: string;
     isPlaying: boolean;
     onTogglePlay: () => void;

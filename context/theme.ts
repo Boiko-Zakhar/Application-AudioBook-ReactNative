@@ -6,7 +6,7 @@ interface theme {
     accent: string,
     muted: string,
     textBlack: string,
-    textGreen: string
+    textGreen: string 
     red: string
   },
   text: {

@@ -2,10 +2,12 @@ import IcontBack from '@/assets/images/IconBack';
 import IconFastForward from '@/assets/images/IconFastForward';
 import IconForward from '@/assets/images/IconForward';
 import IconRewind from '@/assets/images/IconRewind';
+import { useSettings } from '@/context/SettingsContext';
 import Slider from '@react-native-community/slider';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, IconButton, Modal, Portal, Text } from 'react-native-paper';
+import { speak } from '../../speach';
 
 interface ChapterItem {
     id: string;
@@ -43,7 +45,7 @@ export const PlayerControls = ({
     onNextFile,
     onBackFile
 }: PlayerControlsProps) => {
-
+    const { settings } = useSettings();
     const [visible, setVisible] = React.useState(false);
 
     const showModal = () => setVisible(true);
@@ -119,7 +121,15 @@ export const PlayerControls = ({
                     minimumValue={0}
                     maximumValue={duration ?? 1}
                     value={currentTime}
-                    onSlidingComplete={onSeek}
+                    onSlidingComplete={(value) => {
+                        onSeek(value);
+
+                        if (settings.voiceAction) {
+                            const mins = Math.floor(value / 60);
+                            const secs = Math.trunc(value % 60);
+                            speak(`Встановлено час: ${mins} хвилин ${secs} секунд`);
+                        }
+                    }}
                     minimumTrackTintColor={theme.colors.accent}
                     thumbTintColor={theme.colors.accent}
                     maximumTrackTintColor={theme.colors.textGreen}

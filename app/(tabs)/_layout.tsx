@@ -84,6 +84,20 @@ export default function tabLayout() {
                         tabBarIcon: ({ color, size }) => <IconCommunity stroke={color} width={size} height={size} />
                     }}
                 />
+
+                <Tabs.Screen
+                    name="Settings"
+                    options={{
+                        href: null,
+                        headerShown: true,
+                        title: "Налаштування",
+                        headerStyle: {
+                            backgroundColor: theme.colors.background,
+                            
+                        },
+                        headerTintColor: theme.colors.textBlack ,
+                    }}
+                />
             </Tabs>
         </View>
 

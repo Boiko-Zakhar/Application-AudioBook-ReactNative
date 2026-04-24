@@ -7,14 +7,12 @@ import { useEffect, useState } from 'react';
 
 const jsmediatags = require('jsmediatags/dist/jsmediatags.min.js');
 
-// Структура: Глава
 export interface Chapter {
     id: string;
     title: string;
     uri: string;
 }
 
-// Структура: Книга
 export interface Book {
     id: string;
     title: string;

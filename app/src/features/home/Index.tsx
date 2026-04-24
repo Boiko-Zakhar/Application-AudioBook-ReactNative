@@ -1,24 +1,25 @@
 import IconBookmark from '@/assets/images/IconBookmark';
 import IconChange from '@/assets/images/IconChange';
-import IconClock from '@/assets/images/IconClock';
 import IconClockActive from '@/assets/images/IconClockActive';
 import IconImage from '@/assets/images/IconImage';
 import IconLock from '@/assets/images/IconLock';
 import IconToShare from '@/assets/images/IconToShare';
+import { useSettings } from '@/context/SettingsContext';
 import { useTheme } from '@/context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Speech from 'expo-speech';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { speak } from '../speach';
 import { BookCover } from './components/BookCover';
 import { HomeHeader } from './components/HomeHeader';
 import { PlayerControls } from './components/PlayerControls';
 import type { Book } from './hook/useLibrary';
-
-
 
 interface IconProps {
     width: number;
@@ -35,30 +36,38 @@ interface IconItem {
     onPress: () => void;
 }
 
-const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters }: any) => (
-    <View pointerEvents="none" style={styles.brogresBarBook}>
-        <Text style={theme.text.regular} numberOfLines={1}>
-            {bookTitle ?? "Невідома книга"}
-        </Text>
+const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters, onPress }: any) => (
+    <Pressable
+        onPress={onPress}
+    >
+        <View pointerEvents="none" style={styles.brogresBarBook}>
+            <Text style={theme.text.regular} numberOfLines={1}>
+                {bookTitle ?? "Невідома книга"}
+            </Text>
 
-        <Slider
-            style={{ width: 200, height: 5, transform: [{ scaleY: 1.9 }, { scaleX: 1.9 }] }}
-            minimumValue={0}
-            maximumValue={totalChapters > 0 ? totalChapters : 1}
-            value={(chapterIndex || 0) + 1}
-            disabled={false}
-            minimumTrackTintColor={theme.colors.accent}
-            maximumTrackTintColor={theme.colors.textGreen}
-            thumbTintColor="transparent"
-        />
+            <Slider
+                style={{ width: 200, height: 5, transform: [{ scaleY: 1.9 }, { scaleX: 1.9 }] }}
+                minimumValue={0}
+                maximumValue={totalChapters > 0 ? totalChapters : 1}
+                value={(chapterIndex || 0) + 1}
+                disabled={false}
+                minimumTrackTintColor={theme.colors.accent}
+                maximumTrackTintColor={theme.colors.textGreen}
+                thumbTintColor="transparent"
+            />
 
-        <Text style={theme.text.green}>
-            Глава {(chapterIndex || 0) + 1} з {totalChapters || 0}
-        </Text>
-    </View>
+            <Text style={theme.text.green}>
+                Глава {(chapterIndex || 0) + 1} з {totalChapters || 0}
+            </Text>
+        </View>
+    </Pressable>
+
 );
 
 const HomeScreen = () => {
+    const router = useRouter();
+
+    const { settings } = useSettings();
     const { theme } = useTheme();
 
     const { bookData } = useLocalSearchParams();
@@ -131,7 +140,7 @@ const HomeScreen = () => {
         }
 
         if (!isLoadingProgress && !status.playing && initialSeekTime === null) {
-            player.play();
+            player.pause();
         }
 
     }, [status.isLoaded, initialSeekTime, isLoadingProgress]);
@@ -177,7 +186,7 @@ const HomeScreen = () => {
                 console.warn("Не вдалося встановити швидкість:", e);
             }
         }
-    }, [status.isLoaded, player, speed]); 
+    }, [status.isLoaded, player, speed]);
 
     const handleChangeSpeed = () => {
         const speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
@@ -194,7 +203,10 @@ const HomeScreen = () => {
 
     const handleTogglePlay = () => {
         if (player.playing) player.pause();
-        else player.play();
+        else {
+            Speech.stop();
+            player.play()
+        };
     };
 
     const handleSeek = (value: number) => {
@@ -239,10 +251,26 @@ const HomeScreen = () => {
         setActiveIcons(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // --- КОНФІГУРАЦІЯ ІКОНОК ---
+    const createExpoIcon = (name: keyof typeof Ionicons.glyphMap) => {
+        return ({ fill }: { fill?: string }) => (
+            <Ionicons name={name} size={24} color={fill} />
+        );
+    };
+
     const leftIcons: IconItem[] = [
-        { id: 'clock', Icon: IconClock, ActiveIcon: IconClock, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Clock pressed') },
-        { id: 'lock', Icon: IconLock, ActiveIcon: IconClockActive, defaultFill: theme.colors.muted, activeFill: theme.colors.red, onPress: () => console.log('Lock pressed') },
+        {
+            id: 'clock',
+            Icon: createExpoIcon('settings-outline'),
+            ActiveIcon: createExpoIcon('settings-outline'),
+            defaultFill: theme.colors.muted, activeFill: theme.colors.muted,
+            onPress: () => router.push("/Settings")
+        },
+        {
+            id: 'lock',
+            Icon: IconLock, ActiveIcon: IconClockActive,
+            defaultFill: theme.colors.muted, activeFill: theme.colors.red,
+            onPress: () => console.log('Lock pressed')
+        },
         { id: 'image', Icon: IconImage, ActiveIcon: IconImage, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Image pressed') },
     ];
 
@@ -252,6 +280,38 @@ const HomeScreen = () => {
         { id: 'bookmark', Icon: IconBookmark, ActiveIcon: IconBookmark, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Bookmark pressed') },
     ];
 
+    useEffect(() => {
+        if (settings.voiceMeta && chapterIndex !== undefined) {
+            speak(`Глава ${chapterIndex + 1}`);
+        }
+    }, [chapterIndex]);
+
+    const lastAnnouncedBookId = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (settings.voiceMeta && book?.id && status.isLoaded && lastAnnouncedBookId.current !== book.id) {
+            const cMin = Math.floor(status.currentTime / 60);
+            const dMin = Math.floor((status.duration || 0) / 60);
+
+            const message = `Ви відкрили книгу: ${book.title}. Прослухано ${cMin} з ${dMin} хвилин. Швидкість відтворення ${speed}.`;
+            speak(message);
+            lastAnnouncedBookId.current = book.id;
+        }
+
+        if (!book) {
+            lastAnnouncedBookId.current = null;
+        }
+    }, [book?.id, settings.voiceMeta, status.isLoaded]);
+
+    const handleStatusRequest = () => {
+        if (settings.voiceMeta) {
+            const percent = Math.round((status.currentTime / (status.duration || 1)) * 100);
+            const remainingMin = Math.floor(((status.duration || 0) - status.currentTime) / 60);
+            speak(`Пройдено ${percent} відсотків. Залишилося приблизно ${remainingMin} хвилин.`);
+            console.log('1')
+        }
+    };
+
     if (!book) {
         return (
             <View style={[styles.container, { backgroundColor: theme.colors.background, justifyContent: 'center' }]}>
@@ -259,7 +319,6 @@ const HomeScreen = () => {
             </View>
         );
     }
-
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <HomeHeader
@@ -274,6 +333,7 @@ const HomeScreen = () => {
                 bookTitle={book.title}
                 chapterIndex={chapterIndex}
                 totalChapters={book.chapters.length}
+                onPress={handleStatusRequest}
             />
 
             <BookCover

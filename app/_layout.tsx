@@ -1,3 +1,4 @@
+import { SettingsProvider } from "@/context/SettingsContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
@@ -6,14 +7,12 @@ import { configureFonts, DefaultTheme, PaperProvider } from "react-native-paper"
 
 SplashScreen.preventAutoHideAsync();
 
-// Налаштування шрифтів (ваша закоментована частина)
 const fontConfig = {
-  fontFamily: 'Montserrat-Regular', // Встановлюємо основний шрифт
+  fontFamily: 'Montserrat-Regular',
 };
 
 const theme = {
   ...DefaultTheme,
-  // В React Native Paper v5 це найпростіший спосіб змінити всі шрифти
   fonts: configureFonts({ config: fontConfig }),
 };
 
@@ -38,7 +37,9 @@ export default function RootLayout() {
   return (
     <PaperProvider theme={theme}>
       <ThemeProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <SettingsProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </SettingsProvider>
       </ThemeProvider>
     </PaperProvider>
   )

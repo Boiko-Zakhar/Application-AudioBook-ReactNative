@@ -4,15 +4,15 @@ import { darkThemeBase, lightThemeBase } from "./theme";
 type Theme = typeof lightThemeBase;
 
 interface ThemeContextType {
-    theme: Theme,
-    currentTheme: string;
-    setTheme: (nameTheme: string) => void;
+  theme: Theme,
+  currentTheme: string;
+  setTheme: (nameTheme: string) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
-    theme: lightThemeBase,
-    currentTheme: "dark",
-    setTheme: () => {},
+  theme: lightThemeBase,
+  currentTheme: "dark",
+  setTheme: () => { },
 });
 
 export const useTheme = () => useContext(ThemeContext);
