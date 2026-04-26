@@ -1,9 +1,9 @@
 import { SettingsProvider } from "@/context/SettingsContext";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
-import { configureFonts, DefaultTheme, PaperProvider } from "react-native-paper";
+import { PaperProvider } from "react-native-paper";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -11,10 +11,17 @@ const fontConfig = {
   fontFamily: 'Montserrat-Regular',
 };
 
-const theme = {
-  ...DefaultTheme,
-  fonts: configureFonts({ config: fontConfig }),
-};
+function RootContent() {
+  const { theme } = useTheme();
+
+  return (
+    <PaperProvider theme={theme}>
+      <SettingsProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SettingsProvider>
+    </PaperProvider>
+  );
+}
 
 export default function RootLayout() {
 
@@ -35,12 +42,8 @@ export default function RootLayout() {
   }
 
   return (
-    <PaperProvider theme={theme}>
-      <ThemeProvider>
-        <SettingsProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-        </SettingsProvider>
-      </ThemeProvider>
-    </PaperProvider>
+    <ThemeProvider>
+      <RootContent />
+    </ThemeProvider>
   )
 }
