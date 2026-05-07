@@ -4,6 +4,7 @@ import IconForward from '@/assets/images/IconForward';
 import IconRewind from '@/assets/images/IconRewind';
 import { useSettings } from '@/context/SettingsContext';
 import Slider from '@react-native-community/slider';
+import * as Speech from 'expo-speech';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, IconButton, Modal, Portal, Text } from 'react-native-paper';
@@ -66,7 +67,12 @@ export const PlayerControls = ({
                         <IconButton
                             style={{ margin: 0, padding: 0 }}
                             icon={() => <IconRewind width={32} height={32} fill={theme.colors.accent} />}
-                            onPress={() => onRewind(60)}
+                            onPress={() => {
+                                onRewind(60)
+                                if (settings.voiceAction) {
+                                    speak("Назад 1 хвилина");
+                                }
+                            }}
                         />
                         <Text style={theme.text.muted}>1хв</Text>
                     </View>
@@ -74,16 +80,24 @@ export const PlayerControls = ({
                         <IconButton
                             style={{ margin: 0, padding: 0 }}
                             icon={() => <IconRewind width={32} height={32} fill={theme.colors.accent} />}
-                            onPress={() => onRewind(15)}
+                            onPress={() => {
+                                onRewind(15)
+                                if (settings.voiceAction) {
+                                    speak("Назад 15 секунд");
+                                }
+                            }}
                         />
                         <Text style={theme.text.muted}>15с</Text>
                     </View>
                 </View>
 
-                <View style={styles.midlBtt}>
+                <View>
                     <Button
                         mode="text"
-                        onPress={onChangeSpeed}
+                        onPress={() => {
+                            onChangeSpeed();
+                            Speech.stop();
+                        }}
                         labelStyle={{
                             fontFamily: theme.text.bold.fontFamily,
                             fontSize: 32,
@@ -100,7 +114,12 @@ export const PlayerControls = ({
                         <IconButton
                             style={{ margin: 0, padding: 0 }}
                             icon={() => <IconFastForward width={32} height={32} fill={theme.colors.accent} />}
-                            onPress={() => onForward(15)}
+                            onPress={() => {
+                                onForward(15)
+                                if (settings.voiceAction) {
+                                    speak("Вперед 15 секунд");
+                                }
+                            }}
                         />
                         <Text style={theme.text.muted}>15с</Text>
                     </View>
@@ -108,7 +127,13 @@ export const PlayerControls = ({
                         <IconButton
                             style={{ margin: 0, padding: 0 }}
                             icon={() => <IconFastForward width={32} height={32} fill={theme.colors.accent} />}
-                            onPress={() => onForward(60)}
+                            onPress={() => {
+                                onForward(60)
+                                if (settings.voiceAction) {
+   
+                                    speak("Вперед 1 хвилина");
+                                }
+                            }}
                         />
                         <Text style={theme.text.muted}>1хв</Text>
                     </View>
@@ -144,7 +169,12 @@ export const PlayerControls = ({
                 <IconButton
                     style={{ margin: 0, padding: 0 }}
                     icon={() => <IcontBack width={32} height={32} fill={theme.colors.accent} />}
-                    onPress={() => onBackFile()}
+                    onPress={() => {
+                        onBackFile()
+                        if (settings.voiceAction) {
+                            speak("Попередня глава");
+                        }
+                    }}
                 />
 
                 <View style={styles.centerWrapper}>
@@ -181,10 +211,15 @@ export const PlayerControls = ({
                 <IconButton
                     style={{ margin: 0, padding: 0 }}
                     icon={() => <IconForward width={32} height={32} fill={theme.colors.accent} />}
-                    onPress={() => onNextFile()}
+                    onPress={() => {
+                        onNextFile()
+                        if (settings.voiceAction) {
+                            speak("Наступна глава");
+                        }
+                    }}
                 />
             </View>
-        </View>
+        </View >
     );
 };
 

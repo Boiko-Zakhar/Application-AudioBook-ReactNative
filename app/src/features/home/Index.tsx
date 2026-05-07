@@ -10,9 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { speak } from '../speach';
@@ -87,6 +87,12 @@ const HomeScreen = () => {
     const [activeIcons, setActiveIcons] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
+        if (settings.voiceAction) {
+            speak("Швидкість відтворення ікс " + speed + " разів")
+        }
+    }, [speed])
+
+    useEffect(() => {
         setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     }, []);
 
@@ -144,6 +150,12 @@ const HomeScreen = () => {
         }
 
     }, [status.isLoaded, initialSeekTime, isLoadingProgress]);
+
+    useEffect(() => {
+        if (settings.voiceAction && !status.playing) {
+            speak("Пауза");
+        }
+    }, [status.playing])
 
     const lastSavedTime = useRef(0);
 
@@ -279,6 +291,14 @@ const HomeScreen = () => {
         { id: 'change', Icon: IconChange, ActiveIcon: IconToShare, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Change pressed') },
         { id: 'bookmark', Icon: IconBookmark, ActiveIcon: IconBookmark, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Bookmark pressed') },
     ];
+
+    useFocusEffect(
+        useCallback(() => {
+            if (settings.voiceAction) {
+                speak("Головний екран");
+            }
+        }, [])
+    );
 
     useEffect(() => {
         if (settings.voiceMeta && chapterIndex !== undefined) {

@@ -1,18 +1,25 @@
+import { useSettings } from "@/context/SettingsContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
-import * as Speech from 'expo-speech';
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
+import { speak } from "../src/features/speach";
 
 export default function Community() {
   const { setTheme, currentTheme, theme } = useTheme()
+  const { settings } = useSettings();
 
-  const speak = () => {
-    const thingToSay = 'Привіт!';
-    Speech.speak(thingToSay);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      if (settings.voiceMeta) {
+        speak("Екран спільноти");
+      }
+    }, [settings.voiceMeta]) 
+  );
   return (
-    <View style={[style.container, {backgroundColor: theme.colors.surface}]}>
+    <View style={[style.container, { backgroundColor: theme.colors.surface }]}>
       <Text>Community Screen 07</Text>
 
       <Text
@@ -27,10 +34,6 @@ export default function Community() {
 
       <Button mode="contained" onPress={() => setTheme("dark")} style={{ marginVertical: 5 }}>
         Темна
-      </Button>
-
-      <Button mode="outlined" onPress={speak} style={{ marginVertical: 5 }}>
-        Press to hear some words
       </Button>
 
       <Ionicons name="settings-outline" size={24} color="black" />

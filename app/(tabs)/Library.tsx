@@ -1,25 +1,25 @@
+import { useSettings } from "@/context/SettingsContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAudioPlayer } from 'expo-audio';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Button, IconButton } from "react-native-paper";
 import { Book, useLibrary } from "../src/features/home/hook/useLibrary";
+import { speak } from "../src/features/speach";
 
 export default function Library() {
   const { theme } = useTheme();
+  const { settings } = useSettings();
 
   // 1. Підключаємо нашу бібліотеку
   const { books, addBook, removeBook } = useLibrary();
-
   // 2. Стан: Яка книга зараз вибрана?
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
-
   // Стан для UI плеєра
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-
   // 3. Ініціалізуємо плеєр
   // Якщо книга не вибрана, передаємо порожній рядок
   const player = useAudioPlayer(currentBook?.uri || '');
@@ -64,6 +64,14 @@ export default function Library() {
       params: { bookData: JSON.stringify(book) }
     });
   };
+  
+  useFocusEffect(
+    useCallback(() => {
+      if (settings.voiceAction) {
+        speak("Екран бібліотеки")
+      };
+    }, [])
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -73,7 +81,13 @@ export default function Library() {
         <Button
           style={{ backgroundColor: theme.colors.accent }}
           textColor={theme.colors.background}
-          mode="contained" onPress={addBook}
+          mode="contained"
+          onPress={() => {
+            if (settings.voiceAction) {
+              speak("Додати книгу");
+            }
+            addBook();
+          }}
           icon="plus"
         >
           Додати
@@ -87,7 +101,12 @@ export default function Library() {
           <View style={styles.bookItemWrapper}>
             <TouchableOpacity
               style={[styles.bookItem, { backgroundColor: `${theme.colors.muted}80` || '#e0e0e0' }]}
-              onPress={() => openPlayer(item)}
+              onPress={() => {
+                if (settings.voiceAction) {
+                  speak("Книгу відкрито");
+                }
+                openPlayer(item);
+              }}
             >
               <View style={styles.iconContainer}>
                 <Image

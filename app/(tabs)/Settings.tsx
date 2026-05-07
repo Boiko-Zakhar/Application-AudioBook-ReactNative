@@ -1,11 +1,23 @@
 import { useSettings } from "@/context/SettingsContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { Divider, Switch, Text } from 'react-native-paper';
+import { speak } from "../src/features/speach";
 
 export default function Settings() {
     const { theme } = useTheme();
     const { settings, toggleSetting } = useSettings();
+
+
+    useFocusEffect(
+        useCallback(() => {
+            if (settings.voiceAction) {
+                speak("Екран налаштувань")
+            };
+        }, [])
+    );
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -22,7 +34,12 @@ export default function Settings() {
 
                     <Switch
                         value={settings.voiceMeta}
-                        onValueChange={() => toggleSetting('voiceMeta')}
+                        onValueChange={() => {
+                            toggleSetting('voiceMeta');
+                            if (settings.voiceAction) {
+                                speak("Голосові метадані " + (settings.voiceMeta ? "вимкнено" : "увімкнено"));
+                            }
+                        }}
                         color={theme.colors.accent}
                     />
                 </View>
@@ -38,7 +55,10 @@ export default function Settings() {
 
                     <Switch
                         value={settings.voiceAction}
-                        onValueChange={() => toggleSetting('voiceAction')}
+                        onValueChange={() => {
+                            toggleSetting('voiceAction');
+                            speak("Зворотний аудіо зв'язок:" + (settings.voiceAction ? "вимкнено" : "увімкнено"));
+                        }}
                         color={theme.colors.accent}
                     />
                 </View>
