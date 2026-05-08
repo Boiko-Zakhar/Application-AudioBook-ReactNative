@@ -1,14 +1,15 @@
-import IcontBack from '@/assets/images/IconBack';
-import IconFastForward from '@/assets/images/IconFastForward';
-import IconForward from '@/assets/images/IconForward';
-import IconRewind from '@/assets/images/IconRewind';
-import { useSettings } from '@/context/SettingsContext';
+import IcontBack from '@/app/src/assets/images/IconBack';
+import IconFastForward from '@/app/src/assets/images/IconFastForward';
+import IconForward from '@/app/src/assets/images/IconForward';
+import IconRewind from '@/app/src/assets/images/IconRewind';
+import { useSettings } from '@/app/src/context/SettingsContext';
+import { useTypography } from '@/app/src/hooks/useTypography';
 import Slider from '@react-native-community/slider';
 import * as Speech from 'expo-speech';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, IconButton, Modal, Portal, Text } from 'react-native-paper';
-import { speak } from '../../speach';
+import { speak } from '../../speech';
 
 interface ChapterItem {
     id: string;
@@ -47,6 +48,7 @@ export const PlayerControls = ({
     onBackFile
 }: PlayerControlsProps) => {
     const { settings } = useSettings();
+    const { getFontSize } = useTypography();
     const [visible, setVisible] = React.useState(false);
 
     const showModal = () => setVisible(true);
@@ -74,7 +76,12 @@ export const PlayerControls = ({
                                 }
                             }}
                         />
-                        <Text style={theme.text.muted}>1хв</Text>
+                        <Text style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: getFontSize(14),
+                        }}>
+                            1хв
+                        </Text>
                     </View>
                     <View style={styles.bttGrup}>
                         <IconButton
@@ -87,7 +94,12 @@ export const PlayerControls = ({
                                 }
                             }}
                         />
-                        <Text style={theme.text.muted}>15с</Text>
+                        <Text style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: getFontSize(14),
+                        }}>
+                            15с
+                        </Text>
                     </View>
                 </View>
 
@@ -121,7 +133,12 @@ export const PlayerControls = ({
                                 }
                             }}
                         />
-                        <Text style={theme.text.muted}>15с</Text>
+                        <Text style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: getFontSize(14),
+                        }}>
+                            15с
+                        </Text>
                     </View>
                     <View style={styles.bttGrup}>
                         <IconButton
@@ -130,12 +147,17 @@ export const PlayerControls = ({
                             onPress={() => {
                                 onForward(60)
                                 if (settings.voiceAction) {
-   
+
                                     speak("Вперед 1 хвилина");
                                 }
                             }}
                         />
-                        <Text style={theme.text.muted}>1хв</Text>
+                        <Text style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: getFontSize(14),
+                        }}>
+                            1хв
+                        </Text>
                     </View>
                 </View>
             </View>
@@ -160,8 +182,18 @@ export const PlayerControls = ({
                     maximumTrackTintColor={theme.colors.textGreen}
                 />
                 <View style={styles.time}>
-                    <Text style={theme.text.green}>{formatTime(currentTime)}</Text>
-                    <Text style={theme.text.green}>{formatTime(duration)}</Text>
+                    <Text style={{
+                        fontFamily: theme.text.green.fontFamily,
+                        color: theme.colors.secondary,
+                        fontSize: getFontSize(14),
+                    }}>{formatTime(currentTime)}</Text>
+                    <Text style={{
+                        fontFamily: theme.text.green.fontFamily,
+                        color: theme.colors.secondary,
+                        fontSize: getFontSize(14),
+                    }}>
+                        {formatTime(duration)}
+                    </Text>
                 </View>
             </View>
 
@@ -185,12 +217,13 @@ export const PlayerControls = ({
                                 keyExtractor={(item) => item.id}
                                 renderItem={({ item, index }) => (
                                     <Button
-                                        textColor={theme.colors.textBlack}
+                                        textColor={theme.colors.onSurface}
+                                        labelStyle={{ fontSize: getFontSize(16) }}
                                         onPress={() => {
                                             onChapterSelect(index);
                                             hideModal();
                                         }}
-                                        style={{ marginBottom: 5 }}
+                                        style={{ marginBottom: 10 }}
                                     >
                                         {item.title}
                                     </Button>
@@ -201,7 +234,8 @@ export const PlayerControls = ({
                     <Button
                         icon="chevron-down"
                         contentStyle={{ flexDirection: 'row-reverse' }}
-                        textColor={theme.colors.textBlack}
+                        textColor={theme.colors.onSurface}
+                        labelStyle={{ fontSize: getFontSize(15), fontWeight: '600' }}
                         onPress={showModal}
                     >
                         {chapters[currentChapterIndex]?.title || 'Виберіть розділ'}
@@ -245,7 +279,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         alignItems: 'center'
     },
-    timeSlider: { marginTop: 15, justifyContent: 'center', alignItems: 'center', gap: 8 },
+    timeSlider: { marginTop: 15, marginBottom: 5, justifyContent: 'center', alignItems: 'center', gap: 8 },
     slider: { width: '69%', height: 10, transform: [{ scaleY: 1.6 }, { scaleX: 1.6 }] },
     time: { width: 320, flexDirection: 'row', justifyContent: 'space-between' },
     fileGrupBtt: {

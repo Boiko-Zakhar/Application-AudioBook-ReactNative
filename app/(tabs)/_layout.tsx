@@ -1,21 +1,23 @@
 global.Buffer = global.Buffer || require('buffer').Buffer;
 
-import IconCommunity from "@/assets/images/IconCommunity";
-import IconHome from "@/assets/images/IconHome";
-import IconLibrary from "@/assets/images/IconLibrary";
-import { useTheme } from "@/context/ThemeContext";
+import IconCommunity from "@/app/src/assets/images/IconCommunity";
+import IconHome from "@/app/src/assets/images/IconHome";
+import IconLibrary from "@/app/src/assets/images/IconLibrary";
+import { useTheme } from "@/app/src/context/ThemeContext";
 import { Tabs } from "expo-router";
 import { Text, View } from "react-native";
+import { useTypography } from "../src/hooks/useTypography";
 
 export default function tabLayout() {
     const { theme } = useTheme();
+    const { getFontSize } = useTypography();
 
     return (
         <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
             <Tabs
                 screenOptions={{
                     headerShown: false,
-                    tabBarActiveTintColor: theme.colors.accent,
+                    tabBarActiveTintColor: theme.colors.primary,
                     tabBarInactiveTintColor: theme.colors.muted,
 
                     tabBarLabelStyle: {
@@ -23,7 +25,7 @@ export default function tabLayout() {
                     },
 
                     tabBarStyle: {
-                        backgroundColor: theme.colors.background,
+                        backgroundColor: theme.colors.surface,
                         borderTopWidth: 0,
                         elevation: 0,
                         shadowOpacity: 0,
@@ -35,7 +37,7 @@ export default function tabLayout() {
                             <Text
                                 style={{
                                     color,
-                                    fontSize: 12,
+                                    fontSize: getFontSize(12),
                                     fontFamily: focused ? theme.text.bold.fontFamily : theme.text.regular.fontFamily,
                                     paddingBottom: 4,
                                 }}
@@ -50,7 +52,7 @@ export default function tabLayout() {
                                         width: 30,
                                         height: 4,
                                         borderRadius: 2,
-                                        backgroundColor: theme.colors.accent,
+                                        backgroundColor: theme.colors.primary,
                                         marginTop: 2,
                                     }}
                                 />
@@ -92,10 +94,14 @@ export default function tabLayout() {
                         headerShown: true,
                         title: "Налаштування",
                         headerStyle: {
-                            backgroundColor: theme.colors.background,
-                            
+                            backgroundColor: theme.colors.surface,
                         },
-                        headerTintColor: theme.colors.textBlack ,
+                        headerTitleStyle: {
+                            fontFamily: theme.text.bold.fontFamily,
+                            fontSize: getFontSize(18),
+                            color: theme.colors.onSurface
+                        },
+                        headerTintColor: theme.colors.onSurface,
                     }}
                 />
             </Tabs>

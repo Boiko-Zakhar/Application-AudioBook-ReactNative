@@ -3,8 +3,9 @@ import { createContext, ReactNode, useContext, useState } from "react";
 const settingsState = ({
     voiceMeta: false,
     voiceAction: false,
-    isNotifications: false,
-    isBiometrics: false,
+    isDyslexicFont: false,
+    inclusive: false,
+    fontScale: 1,
 });
 
 export type SettingType = typeof settingsState;
@@ -12,7 +13,7 @@ export type SettingKey = keyof SettingType;
 
 interface SettingsContextType {
     settings: SettingType;
-    toggleSetting: (key: SettingKey) => void; 
+    setSetting: <K extends SettingKey>(key: K, value: SettingType[K]) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -20,15 +21,15 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [settings, setSettings] = useState<SettingType>(settingsState);
 
-    const toggleSetting = (key: SettingKey) => {
+    const setSetting = <K extends SettingKey>(key: K, value: SettingType[K]) => {
         setSettings((prev) => ({
             ...prev,
-            [key]: !prev[key],
+            [key]: value,
         }));
     };
 
     return (
-        <SettingsContext.Provider value={{ settings, toggleSetting }}>
+        <SettingsContext.Provider value={{ settings, setSetting }}>
             {children}
         </SettingsContext.Provider>
     );

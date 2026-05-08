@@ -21,12 +21,11 @@ export const BookCover = ({
         <TouchableRipple
             onPress={() => onTogglePlay()}
             rippleColor="rgba(0, 0, 0, .32)" 
-            style={{ borderRadius: 10 }} 
         >
             <View style={styles.imageBook} >
                 <Image
                     source={imageSource}
-                    style={{ width: '100%', height: '95%', borderRadius: 10 }}
+                    style={{ width: '100%', height: '95%'}}
                 />
                 <IconButton
                     style={styles.overlayButton}

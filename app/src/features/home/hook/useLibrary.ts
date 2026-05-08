@@ -81,6 +81,43 @@ export const useLibrary = () => {
         }
     };
 
+    const saveAlbumArt = async (fileUri: string, bookId: string, bookDir: Directory): Promise<string | null> => {
+        try {
+            const audioFile = new File(fileUri);
+            const arrayBuffer = await audioFile.arrayBuffer();
+            const dataArray = Buffer.from(arrayBuffer);
+
+            return new Promise((resolve) => {
+                new jsmediatags.Reader(dataArray).read({
+                    onSuccess: async (tag: any) => {
+                        const picture = tag.tags.picture;
+                        if (!picture) return resolve(null);
+
+                        const { data, format } = picture;
+                        const base64Img = Buffer.from(data).toString('base64');
+
+                        // Створюємо файл для обкладинки в папці книги
+                        const coverFile = new File(bookDir, `cover_${bookId}.jpg`);
+
+                        // Записуємо Base64 у файл (використовуємо File.write з expo-file-system)
+                        // або просто зберігаємо через File.writeAsStringAsync, якщо використовуєте старий API
+                        // Але з вашим новим API це виглядає так:
+                        await coverFile.write(base64Img, { encoding: 'base64' });
+
+                        resolve(coverFile.uri); // Повертаємо посилання на файл, а не сам Base64
+                    },
+                    onError: (error: any) => {
+                        console.log('ID3 Error:', error);
+                        resolve(null);
+                    }
+                });
+            });
+        } catch (e) {
+            console.error("Помилка обробки обкладинки:", e);
+            return null;
+        }
+    };
+
     // --- ГОЛОВНА ФУНКЦІЯ ДОДАВАННЯ ---
     const addBook = async () => {
         try {
@@ -104,19 +141,19 @@ export const useLibrary = () => {
             if (!bookDir.exists) await bookDir.create();
 
             const newChapters: Chapter[] = [];
-            let albumArt: string | null = null;
+            let albumArtUri: string | null = null;
 
             for (let i = 0; i < sortedAssets.length; i++) {
                 const asset = sortedAssets[i];
                 const safeName = asset.name.replace(/[^a-z0-9._-]/gi, '_');
-                
+
                 const sourceFile = new File(asset.uri);
                 const destFile = new File(bookDir, safeName);
 
                 await sourceFile.move(destFile);
 
                 if (i === 0) {
-                    albumArt = await getAlbumArt(destFile.uri);
+                    albumArtUri = await saveAlbumArt(destFile.uri, bookId, bookDir)
                 }
 
                 newChapters.push({
@@ -136,7 +173,7 @@ export const useLibrary = () => {
             const newBook: Book = {
                 id: bookId,
                 title: bookTitle.length > 0 ? bookTitle : "Нова аудіокнига",
-                image: albumArt, 
+                image: albumArtUri,
                 chapters: newChapters,
             };
 

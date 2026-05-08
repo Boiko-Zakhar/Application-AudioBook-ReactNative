@@ -1,11 +1,11 @@
-import IconBookmark from '@/assets/images/IconBookmark';
-import IconChange from '@/assets/images/IconChange';
-import IconClockActive from '@/assets/images/IconClockActive';
-import IconImage from '@/assets/images/IconImage';
-import IconLock from '@/assets/images/IconLock';
-import IconToShare from '@/assets/images/IconToShare';
-import { useSettings } from '@/context/SettingsContext';
-import { useTheme } from '@/context/ThemeContext';
+import IconBookmark from '@/app/src/assets/images/IconBookmark';
+import IconChange from '@/app/src/assets/images/IconChange';
+import IconClockActive from '@/app/src/assets/images/IconClockActive';
+import IconImage from '@/app/src/assets/images/IconImage';
+import IconLock from '@/app/src/assets/images/IconLock';
+import IconToShare from '@/app/src/assets/images/IconToShare';
+import { useSettings } from '@/app/src/context/SettingsContext';
+import { useTheme } from '@/app/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
@@ -13,9 +13,10 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { speak } from '../speach';
+import { useTypography } from '../../hooks/useTypography';
+import { speak } from '../speech';
 import { BookCover } from './components/BookCover';
 import { HomeHeader } from './components/HomeHeader';
 import { PlayerControls } from './components/PlayerControls';
@@ -36,37 +37,52 @@ interface IconItem {
     onPress: () => void;
 }
 
-const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters, onPress }: any) => (
-    <Pressable
-        onPress={onPress}
-    >
-        <View pointerEvents="none" style={styles.brogresBarBook}>
-            <Text style={theme.text.regular} numberOfLines={1}>
-                {bookTitle ?? "Невідома книга"}
-            </Text>
+const BookProgressSimple = ({ theme, bookTitle, chapterIndex, totalChapters, onPress }: any) => {
+    const { getFontSize } = useTypography();
 
-            <Slider
-                style={{ width: 200, height: 5, transform: [{ scaleY: 1.9 }, { scaleX: 1.9 }] }}
-                minimumValue={0}
-                maximumValue={totalChapters > 0 ? totalChapters : 1}
-                value={(chapterIndex || 0) + 1}
-                disabled={false}
-                minimumTrackTintColor={theme.colors.accent}
-                maximumTrackTintColor={theme.colors.textGreen}
-                thumbTintColor="transparent"
-            />
+    return (
+        <Pressable
+            onPress={onPress}
+        >
+            <View pointerEvents="none" style={styles.brogresBarBook}>
+                <Text
+                    style={{
+                        color: theme.colors.onSurface,
+                        fontSize: getFontSize(16),
+                        lineHeight: getFontSize(22),
+                        textAlign: 'center'
+                    }}
+                    numberOfLines={1}
+                >
+                    {bookTitle ?? "Невідома книга"}
+                </Text>
 
-            <Text style={theme.text.green}>
-                Глава {(chapterIndex || 0) + 1} з {totalChapters || 0}
-            </Text>
-        </View>
-    </Pressable>
+                <Slider
+                    style={{ width: 200, height: 5, transform: [{ scaleY: 1.9 }, { scaleX: 1.9 }] }}
+                    minimumValue={0}
+                    maximumValue={totalChapters > 0 ? totalChapters : 1}
+                    value={(chapterIndex || 0) + 1}
+                    disabled={false}
+                    minimumTrackTintColor={theme.colors.accent}
+                    maximumTrackTintColor={theme.colors.textGreen}
+                    thumbTintColor="transparent"
+                />
 
-);
+                <Text style={{
+                    color: theme.colors.primary,
+                    fontSize: getFontSize(14)
+                }}>
+                    Глава {(chapterIndex || 0) + 1} з {totalChapters || 0}
+                </Text>
+            </View>
+        </Pressable>
+    )
+};
 
 const HomeScreen = () => {
     const router = useRouter();
 
+    const { getFontSize } = useTypography();
     const { settings } = useSettings();
     const { theme } = useTheme();
 
@@ -292,43 +308,49 @@ const HomeScreen = () => {
         { id: 'bookmark', Icon: IconBookmark, ActiveIcon: IconBookmark, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Bookmark pressed') },
     ];
 
+    const lastAnnouncedBookId = useRef<string | null>(null);
+
+    useEffect(
+        useCallback(() => {
+            const announceArrival = async () => {
+
+                if (settings.voiceMeta && book?.id && status.isLoaded && lastAnnouncedBookId.current !== book.id) {
+                    setTimeout(() => {
+                        const cMin = Math.floor(status.currentTime / 60);
+                        const dMin = Math.floor((status.duration || 0) / 60);
+
+                        const message = `Ви відкрили книгу: ${book.title}. Прослухано ${cMin} з ${dMin} хвилин. Глава ${chapterIndex + 1}`;
+
+                        speak(message);
+                        lastAnnouncedBookId.current = book.id;
+                    }, 1200);
+                }
+            };
+
+            announceArrival();
+        }, [book?.id, status.isLoaded, settings.voiceMeta, settings.voiceAction])
+    );
+
     useFocusEffect(
         useCallback(() => {
             if (settings.voiceAction) {
                 speak("Головний екран");
             }
         }, [])
+
     );
 
     useEffect(() => {
-        if (settings.voiceMeta && chapterIndex !== undefined) {
+        if (settings.voiceMeta && chapterIndex !== undefined && lastAnnouncedBookId.current === book?.id) {
             speak(`Глава ${chapterIndex + 1}`);
         }
     }, [chapterIndex]);
-
-    const lastAnnouncedBookId = useRef<string | null>(null);
-
-    useEffect(() => {
-        if (settings.voiceMeta && book?.id && status.isLoaded && lastAnnouncedBookId.current !== book.id) {
-            const cMin = Math.floor(status.currentTime / 60);
-            const dMin = Math.floor((status.duration || 0) / 60);
-
-            const message = `Ви відкрили книгу: ${book.title}. Прослухано ${cMin} з ${dMin} хвилин. Швидкість відтворення ${speed}.`;
-            speak(message);
-            lastAnnouncedBookId.current = book.id;
-        }
-
-        if (!book) {
-            lastAnnouncedBookId.current = null;
-        }
-    }, [book?.id, settings.voiceMeta, status.isLoaded]);
 
     const handleStatusRequest = () => {
         if (settings.voiceMeta) {
             const percent = Math.round((status.currentTime / (status.duration || 1)) * 100);
             const remainingMin = Math.floor(((status.duration || 0) - status.currentTime) / 60);
             speak(`Пройдено ${percent} відсотків. Залишилося приблизно ${remainingMin} хвилин.`);
-            console.log('1')
         }
     };
 
@@ -340,44 +362,49 @@ const HomeScreen = () => {
         );
     }
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <HomeHeader
-                leftIcons={leftIcons}
-                rightIcons={rightIcons}
-                activeIcons={activeIcons}
-                onToggleIcon={toggleIconState}
-            />
+        <View style={[styles.container, { paddingTop: 30, backgroundColor: theme.colors.surface }]}>
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <HomeHeader
+                    leftIcons={leftIcons}
+                    rightIcons={rightIcons}
+                    activeIcons={activeIcons}
+                    onToggleIcon={toggleIconState}
+                />
 
-            <BookProgressSimple
-                theme={theme}
-                bookTitle={book.title}
-                chapterIndex={chapterIndex}
-                totalChapters={book.chapters.length}
-                onPress={handleStatusRequest}
-            />
+                <BookProgressSimple
+                    theme={theme}
+                    bookTitle={book.title}
+                    chapterIndex={chapterIndex}
+                    totalChapters={book.chapters.length}
+                    onPress={handleStatusRequest}
+                />
 
-            <BookCover
-                imageSource={book ? book.image : require('@/assets/images/frame.png')}
-                accentColor={theme.colors.accent}
-                isPlaying={status.playing}
-                onTogglePlay={handleTogglePlay}
-            />
+                <BookCover
+                    imageSource={book ? book.image : require('@/app/src/assets/images/frame.png')}
+                    accentColor={theme.colors.accent}
+                    isPlaying={status.playing}
+                    onTogglePlay={handleTogglePlay}
+                />
 
-            <PlayerControls
-                currentTime={status.currentTime}
-                duration={status.duration ?? 0}
-                theme={theme}
-                chapters={book?.chapters || []}
-                currentChapterIndex={chapterIndex}
-                rate={speed}
-                onChangeSpeed={handleChangeSpeed}
-                onChapterSelect={(index) => setChapterIndex(index)}
-                onSeek={handleSeek}
-                onRewind={handleRewind}
-                onForward={handleForward}
-                onNextFile={handleNextChapter}
-                onBackFile={handleBackChapter}
-            />
+                <PlayerControls
+                    currentTime={status.currentTime}
+                    duration={status.duration ?? 0}
+                    theme={theme}
+                    chapters={book?.chapters || []}
+                    currentChapterIndex={chapterIndex}
+                    rate={speed}
+                    onChangeSpeed={handleChangeSpeed}
+                    onChapterSelect={(index) => setChapterIndex(index)}
+                    onSeek={handleSeek}
+                    onRewind={handleRewind}
+                    onForward={handleForward}
+                    onNextFile={handleNextChapter}
+                    onBackFile={handleBackChapter}
+                />
+            </ScrollView>
         </View>
     );
 }
@@ -388,7 +415,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 35,
         paddingBottom: 5
     },
 

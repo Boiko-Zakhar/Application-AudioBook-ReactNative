@@ -1,47 +1,40 @@
-import { useSettings } from "@/context/SettingsContext";
-import { useTheme } from "@/context/ThemeContext";
+import { useSettings } from "@/app/src/context/SettingsContext";
+import { useTheme } from "@/app/src/context/ThemeContext";
 import { useAudioPlayer } from 'expo-audio';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Button, IconButton } from "react-native-paper";
+import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Button, IconButton, Text } from "react-native-paper";
 import { Book, useLibrary } from "../src/features/home/hook/useLibrary";
-import { speak } from "../src/features/speach";
+import { speak } from "../src/features/speech";
+import { useTypography } from "../src/hooks/useTypography";
 
 export default function Library() {
   const { theme } = useTheme();
   const { settings } = useSettings();
+  const { getFontSize } = useTypography();
 
-  // 1. Підключаємо нашу бібліотеку
   const { books, addBook, removeBook } = useLibrary();
-  // 2. Стан: Яка книга зараз вибрана?
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
-  // Стан для UI плеєра
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  // 3. Ініціалізуємо плеєр
-  // Якщо книга не вибрана, передаємо порожній рядок
+
   const player = useAudioPlayer(currentBook?.uri || '');
 
-  // 4. Логіка синхронізації плеєра (оновлення часу, автоперемикання)
   useEffect(() => {
     if (!player) return;
-
     setIsPlaying(player.playing);
 
-    // Таймер для оновлення повзунка
     const interval = setInterval(() => {
       if (player.playing) {
         setCurrentTime(player.currentTime);
       }
     }, 500);
 
-    // Слухач подій плеєра
     const subscription = player.addListener('playbackStatusUpdate', (status) => {
       setIsPlaying(status.playing);
       setCurrentTime(status.currentTime);
-
       if (status.didJustFinish) {
         setIsPlaying(false);
         setCurrentTime(0);
@@ -54,11 +47,9 @@ export default function Library() {
     };
   }, [player]);
 
-  const router = useRouter(); // 2. Ініціалізуємо роутер
+  const router = useRouter();
 
   const openPlayer = (book: Book) => {
-    // 3. Переходимо на екран плеєра і передаємо дані книги
-    // Ми перетворюємо об'єкт на рядок JSON, щоб безпечно передати його через URL
     router.push({
       pathname: "/Home",
       params: { bookData: JSON.stringify(book) }
@@ -70,17 +61,24 @@ export default function Library() {
       if (settings.voiceAction) {
         speak("Екран бібліотеки")
       };
-    }, [])
+    }, [settings.voiceAction])
   );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Хедер і кнопка додавання (без змін) */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text.regular.color }]}>Моя Бібліотека</Text>
+        <Text style={{ 
+          color: theme.colors.onSurface, 
+          fontSize: getFontSize(20), 
+          lineHeight: getFontSize(26),
+          letterSpacing: -1 
+        }}>
+          Моя Бібліотека
+        </Text>
         <Button
           style={{ backgroundColor: theme.colors.accent }}
           textColor={theme.colors.background}
+          labelStyle={{ fontSize: getFontSize(14) }}
           mode="contained"
           onPress={() => {
             if (settings.voiceAction) {
@@ -96,14 +94,18 @@ export default function Library() {
 
       <FlatList
         data={books}
+        contentContainerStyle={{ paddingBottom: 20 }}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.bookItemWrapper}>
             <TouchableOpacity
-              style={[styles.bookItem, { backgroundColor: `${theme.colors.muted}80` || '#e0e0e0' }]}
+              style={[
+                styles.bookItem, 
+                { backgroundColor: `${theme.colors.muted}40` } 
+              ]}
               onPress={() => {
                 if (settings.voiceAction) {
-                  speak("Книгу відкрито");
+                  speak(`Книгу ${item.title} відкрито`);
                 }
                 openPlayer(item);
               }}
@@ -115,14 +117,38 @@ export default function Library() {
                 />
               </View>
               <View style={styles.bookInfo}>
-                <Text numberOfLines={1} style={[styles.bookTitle, { color: theme.text.regular.color }]}>
+                <Text 
+                  numberOfLines={2}
+                  style={{ 
+                    color: theme.colors.onSurface, 
+                    fontSize: getFontSize(16), 
+                    fontWeight: '600',
+                    lineHeight: getFontSize(20)
+                  }}
+                >
                   {item.title}
                 </Text>
-                <Text style={{ color: 'gray' }}>Аудіокнига</Text>
+                <Text style={{ 
+                  color: theme.colors.onSurfaceVariant, 
+                  fontSize: getFontSize(12),
+                  marginTop: 4 
+                }}>
+                  Аудіокнига
+                </Text>
               </View>
             </TouchableOpacity>
 
-            <IconButton icon="trash-can-outline" size={20} onPress={() => removeBook(item.id)} />
+            <IconButton 
+              icon="trash-can-outline" 
+              iconColor={theme.colors.onSurface}
+              size={24} 
+              onPress={() => {
+                if (settings.voiceAction) {
+                  speak(`Видалено книгу: ${item.title}`);
+                }
+                removeBook(item.id);
+              }} 
+            />
           </View>
         )}
       />
@@ -133,10 +159,10 @@ export default function Library() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   imageBook: {
-    width: 124,
-    height: 124,
-    borderTopStartRadius: 8,
-    borderBottomLeftRadius: 8,
+    width: 100, 
+    height: 100,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
     backgroundColor: '#ccc'
   },
   header: {
@@ -146,43 +172,23 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 35,
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold' },
   bookItemWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 5,
-    marginBottom: 10,
+    paddingHorizontal: 10,
+    marginBottom: 12,
   },
   bookItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    minHeight: 100, 
   },
-
-  iconContainer: { marginRight: 15 },
-  bookInfo: { flex: 1 },
-  bookTitle: { fontSize: 16, fontWeight: '600' },
-  emptyState: { alignItems: 'center', marginTop: 50 },
-
-  playerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  iconContainer: { alignSelf: 'stretch' },
+  bookInfo: { 
+    flex: 1, 
+    padding: 12,
+    justifyContent: 'center' 
   },
-  playerTitle: {
-    textAlign: 'center',
-    fontWeight: 'bold',
-    marginBottom: 10,
-  }
 });
