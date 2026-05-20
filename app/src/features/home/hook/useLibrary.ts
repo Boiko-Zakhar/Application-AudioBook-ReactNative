@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Buffer, } from 'buffer';
+import { Asset } from 'expo-asset';
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import { Directory, File, Paths } from 'expo-file-system';
+import { readAsStringAsync } from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
 
 const jsmediatags = require('jsmediatags/dist/jsmediatags.min.js');
@@ -20,39 +22,8 @@ export interface Book {
     chapters: Chapter[];
 }
 
-const getAlbumArt = async (fileUri: string): Promise<string | null> => {
-    try {
-        const audioFile = new File(fileUri);
-
-        const arrayBuffer = await audioFile.arrayBuffer();
-        const dataArray = Buffer.from(arrayBuffer);
-
-        return new Promise((resolve) => {
-            new jsmediatags.Reader(dataArray).read({
-                onSuccess: (tag: any) => {
-                    const picture = tag.tags.picture;
-                    if (!picture) return resolve(null);
-
-                    const { data, format } = picture;
-                    const base64Img = Buffer.from(data).toString('base64');
-                    resolve(`data:${format};base64,${base64Img}`);
-                },
-                onError: (error: any) => {
-                    console.log('ID3 Error:', error);
-                    resolve(null);
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Не вдалося обробити файл через новий API:", e);
-        return null;
-    }
-};
-
 export const useLibrary = () => {
     const [books, setBooks] = useState<Book[]>([]);
-
-    // Головна папка бібліотеки
     const libraryDir = new Directory(Paths.document, 'AudioBooks');
 
     useEffect(() => {
@@ -68,7 +39,7 @@ export const useLibrary = () => {
         try {
             if (!libraryDir.exists) await libraryDir.create();
         } catch (e) {
-            console.error("Помилка папки:", e);
+            console.error("Folder error:", e);
         }
     };
 
@@ -83,46 +54,54 @@ export const useLibrary = () => {
 
     const saveAlbumArt = async (fileUri: string, bookId: string, bookDir: Directory): Promise<string | null> => {
         try {
-            const audioFile = new File(fileUri);
-            const arrayBuffer = await audioFile.arrayBuffer();
-            const dataArray = Buffer.from(arrayBuffer);
+            const bytesToRead = 1500 * 1024;
+
+            const partialBase64 = await readAsStringAsync(fileUri, {
+                encoding: "base64",
+                position: 0,          
+                length: bytesToRead,
+            });
+
+            const buffer = Buffer.from(partialBase64, 'base64');
 
             return new Promise((resolve) => {
-                new jsmediatags.Reader(dataArray).read({
+                new jsmediatags.Reader(buffer).read({
                     onSuccess: async (tag: any) => {
-                        const picture = tag.tags.picture;
-                        if (!picture) return resolve(null);
+                        const picture = tag?.tags?.picture;
+                        if (!picture) {
+                            const defaultAssets = Asset.fromModule(require('@/app/src/assets/images/frame.jpg'));
+                            return resolve(defaultAssets.uri);
+                        }
 
                         const { data, format } = picture;
                         const base64Img = Buffer.from(data).toString('base64');
 
-                        // Створюємо файл для обкладинки в папці книги
-                        const coverFile = new File(bookDir, `cover_${bookId}.jpg`);
+                        const isPng = format === 'image/png';
+                        const ext = isPng ? 'png' : 'jpg';
+                        const coverFile = new File(bookDir, `cover_${bookId}.${ext}`);
 
-                        // Записуємо Base64 у файл (використовуємо File.write з expo-file-system)
-                        // або просто зберігаємо через File.writeAsStringAsync, якщо використовуєте старий API
-                        // Але з вашим новим API це виглядає так:
                         await coverFile.write(base64Img, { encoding: 'base64' });
 
-                        resolve(coverFile.uri); // Повертаємо посилання на файл, а не сам Base64
+                        resolve(coverFile.uri);
                     },
                     onError: (error: any) => {
-                        console.log('ID3 Error:', error);
-                        resolve(null);
+                        console.log('ID3 Error (processed):', error.info || error.type);
+                        const defaultAssets = Asset.fromModule(require('@/app/src/assets/images/frame.jpg'));
+                        resolve(defaultAssets.uri);
                     }
                 });
             });
         } catch (e) {
-            console.error("Помилка обробки обкладинки:", e);
+            console.error("Cover processing failed:", e);
             return null;
         }
     };
 
-    // --- ГОЛОВНА ФУНКЦІЯ ДОДАВАННЯ ---
+    // --- THE MAIN FUNCTION OF ADDING ---
     const addBook = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'audio/*', // Дозволяємо всі файли (щоб уникнути глюків з Google Drive)
+                type: 'audio/*',
                 multiple: true,
                 copyToCacheDirectory: true,
             });
@@ -133,7 +112,6 @@ export const useLibrary = () => {
                 a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
             );
 
-            // Створюємо папку книги
             const bookId = Crypto.randomUUID();
             const bookFolderName = `Book_${bookId}`;
             const bookDir = new Directory(libraryDir.uri, bookFolderName);
@@ -182,11 +160,11 @@ export const useLibrary = () => {
 
             await AsyncStorage.setItem('myBooks', JSON.stringify(updatedBooks));
 
-            console.log(`Успішно додано: ${newBook.title} (${newChapters.length} глав)`);
+            console.info(`Successfully added: ${newBook.title} (${newChapters.length} chapters)`);
 
         } catch (error) {
-            console.error('Помилка додавання:', error);
-            alert("Помилка при додаванні. Перевірте пам'ять телефону.");
+            console.error('Error adding:', error);
+            alert("Error adding. Check your phone's memory.");
         }
     };
 

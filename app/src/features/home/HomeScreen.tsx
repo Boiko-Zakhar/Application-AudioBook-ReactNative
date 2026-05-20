@@ -1,7 +1,6 @@
 import IconBookmark from '@/app/src/assets/images/IconBookmark';
 import IconChange from '@/app/src/assets/images/IconChange';
 import IconClockActive from '@/app/src/assets/images/IconClockActive';
-import IconImage from '@/app/src/assets/images/IconImage';
 import IconLock from '@/app/src/assets/images/IconLock';
 import IconToShare from '@/app/src/assets/images/IconToShare';
 import { useSettings } from '@/app/src/context/SettingsContext';
@@ -14,7 +13,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 import { useTypography } from '../../hooks/useTypography';
 import { speak } from '../speech';
 import { BookCover } from './components/BookCover';
@@ -102,6 +101,61 @@ const HomeScreen = () => {
     const status = useAudioPlayerStatus(player);
     const [activeIcons, setActiveIcons] = useState<Record<string, boolean>>({});
 
+    const [visible, setVisible] = useState(false);
+    const toggleAlert = () => {
+        const nextState = !visible;
+        setVisible(nextState);
+
+        if (settings.voiceAction) {
+            const message = nextState
+                ? "На жаль, ця можливість ще недоступна. Ми працюємо над її додаванням у найближчих оновленнях."
+                : "Закрито";
+            speak(message);
+        }
+    };
+
+    const [disablePlayer, setDisablePlayer] = useState(false);
+    const toggleControllplayer = () => {
+        if (!disablePlayer) {
+            setDisablePlayer(true);
+            if (settings.voiceAction) speak("Керування заблоковано");
+        } else if (disablePlayer) {
+            setDisablePlayer(false);
+            if (settings.voiceAction) speak("Керування розблоковано");
+        }
+    };
+
+    const [sleepTimer, setSleepTimer] = useState<number | null>(null);
+    const [isSleepDialogVisible, setIsSleepDialogVisible] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [selectedMinutes, setSelectedMinutes] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (sleepTimer !== null && sleepTimer > 0) {
+            timerRef.current = setInterval(() => {
+                setSleepTimer(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        } else if (sleepTimer === 0) {
+            if (player.playing) {
+                player.pause();
+                setSelectedMinutes(null);
+                if (settings.voiceAction) speak("Таймер завершено, відтворення зупинено");
+            }
+            setSleepTimer(null);
+        }
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [sleepTimer, player.playing]);
+
+    const startSleepTimer = (minutes: number) => {
+        setSleepTimer(minutes * 60);
+        setSelectedMinutes(minutes);
+        setIsSleepDialogVisible(false);
+        if (settings.voiceAction) speak(`Таймер сну встановлено на ${minutes} хвилин`);
+    };
+
     useEffect(() => {
         if (settings.voiceAction) {
             speak("Швидкість відтворення ікс " + speed + " разів")
@@ -109,7 +163,12 @@ const HomeScreen = () => {
     }, [speed])
 
     useEffect(() => {
-        setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+        setAudioModeAsync({
+            allowsRecording: false,
+            playsInSilentMode: true,
+            shouldPlayInBackground: true,
+            shouldRouteThroughEarpiece: false
+        });
     }, []);
 
     useEffect(() => {
@@ -287,25 +346,53 @@ const HomeScreen = () => {
 
     const leftIcons: IconItem[] = [
         {
-            id: 'clock',
+            id: 'setting',
             Icon: createExpoIcon('settings-outline'),
             ActiveIcon: createExpoIcon('settings-outline'),
-            defaultFill: theme.colors.muted, activeFill: theme.colors.muted,
-            onPress: () => router.push("/Settings")
+            defaultFill: theme.colors.onSurfaceVariant, activeFill: theme.colors.onSurfaceVariant,
+            onPress: () => router.navigate("/Settings")
         },
         {
             id: 'lock',
             Icon: IconLock, ActiveIcon: IconClockActive,
-            defaultFill: theme.colors.muted, activeFill: theme.colors.red,
-            onPress: () => console.log('Lock pressed')
+            defaultFill: theme.colors.onSurfaceVariant, activeFill: theme.colors.red,
+            onPress: () => toggleControllplayer()
         },
-        { id: 'image', Icon: IconImage, ActiveIcon: IconImage, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Image pressed') },
+        {
+            id: 'clock',
+            Icon: createExpoIcon('timer-outline'),
+            ActiveIcon: createExpoIcon('timer-outline'),
+            defaultFill: sleepTimer ? theme.colors.accent : theme.colors.onSurfaceVariant,
+            activeFill: sleepTimer ? theme.colors.accent : theme.colors.onSurfaceVariant,
+            onPress: () => setIsSleepDialogVisible(true)
+        },
     ];
 
     const rightIcons: IconItem[] = [
-        { id: 'share', Icon: IconToShare, ActiveIcon: IconToShare, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Share pressed') },
-        { id: 'change', Icon: IconChange, ActiveIcon: IconToShare, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Change pressed') },
-        { id: 'bookmark', Icon: IconBookmark, ActiveIcon: IconBookmark, defaultFill: theme.colors.muted, activeFill: theme.colors.accent, onPress: () => console.log('Bookmark pressed') },
+        {
+            id: 'share',
+            Icon: IconToShare,
+            ActiveIcon: IconToShare,
+            defaultFill: theme.colors.onSurfaceVariant,
+            activeFill: theme.colors.onSurfaceVariant,
+            onPress: () => toggleAlert()
+        },
+        {
+            id: 'change',
+            Icon: IconChange,
+            ActiveIcon: IconChange,
+            defaultFill: theme.colors.onSurfaceVariant,
+            activeFill: theme.colors.onSurfaceVariant,
+            onPress: () => toggleAlert()
+        },
+        {
+            id: 'bookmark',
+            Icon: IconBookmark,
+            ActiveIcon: IconBookmark,
+            defaultFill: theme.colors.onSurfaceVariant,
+            activeFill: theme.colors.onSurfaceVariant,
+            onPress: () => toggleAlert()
+        },
     ];
 
     const lastAnnouncedBookId = useRef<string | null>(null);
@@ -334,9 +421,10 @@ const HomeScreen = () => {
     useFocusEffect(
         useCallback(() => {
             if (settings.voiceAction) {
+                console.log(settings.voiceAction)
                 speak("Головний екран");
             }
-        }, [])
+        }, [settings.voiceAction])
 
     );
 
@@ -356,8 +444,100 @@ const HomeScreen = () => {
 
     if (!book) {
         return (
-            <View style={[styles.container, { backgroundColor: theme.colors.background, justifyContent: 'center' }]}>
-                <Text style={{ color: theme.text.muted.color }}>Книгу не вибрано</Text>
+            <View style={[styles.containerAlert, { paddingTop: 30, backgroundColor: theme.colors.background, justifyContent: 'center' }]}>
+                <HomeHeader
+                    leftIcons={leftIcons}
+                    rightIcons={rightIcons}
+                    activeIcons={activeIcons}
+                    onToggleIcon={toggleIconState}
+                    isLocked={disablePlayer}
+                />
+                <View style={styles.centeredContent}>
+                    <Text style={{ color: theme.text.muted.color, fontSize: getFontSize(16) }}>
+                        Книгу не обрано
+                    </Text>
+                </View>
+
+                <Portal>
+                    <Dialog style={{
+                        backgroundColor: theme.colors.surface
+                    }}
+                        visible={visible}
+                        onDismiss={toggleAlert}
+                    >
+                        <Dialog.Title>Повідомлення</Dialog.Title>
+                        <Dialog.Content>
+                            <Text variant="bodyMedium">На жаль, ця можливість ще недоступна. Ми працюємо над її додаванням у найближчих оновленнях.</Text>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <Button onPress={toggleAlert}>Зрозуміло</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+
+                    <Dialog
+                        visible={isSleepDialogVisible}
+                        onDismiss={() => setIsSleepDialogVisible(false)}
+                        style={{ backgroundColor: theme.colors.surface }}
+                    >
+                        <Dialog.Title style={{ textAlign: 'center' }}>
+                            Таймер сну
+                        </Dialog.Title>
+
+                        <Dialog.Content>
+                            <View style={styles.timerGrid}>
+                                {[15, 30, 45, 60].map((min) => {
+                                    const isActive = selectedMinutes === min;
+                                    return (
+                                        <Pressable
+                                            key={min}
+                                            onPress={() => startSleepTimer(min)}
+                                            style={({ pressed }) => [
+                                                styles.timerBox,
+                                                {
+                                                    backgroundColor: isActive ? theme.colors.accent : '#2C2C2E',
+                                                    opacity: pressed ? 0.7 : 1,
+                                                },
+                                            ]}
+                                        >
+                                            <Text style={[styles.timerValue, { color: isActive ? '#000' : '#FFF' }]}>
+                                                {min}
+                                            </Text>
+                                            <Text style={[styles.timerUnit, { color: isActive ? '#000' : '#AAA' }]}>
+                                                хв
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        </Dialog.Content>
+
+                        <Dialog.Actions style={{ justifyContent: 'center', paddingBottom: 15 }}>
+                            {sleepTimer !== null ? (
+                                <Button
+                                    textColor={theme.colors.error}
+                                    onPress={() => {
+                                        setSleepTimer(null);
+                                        setIsSleepDialogVisible(false);
+                                        setSelectedMinutes(null);
+                                        if (settings.voiceAction) speak("Таймер скинуто.");
+                                    }}
+                                >
+                                    Вимкнути таймер
+                                </Button>
+                            ) : (
+                                <Button
+                                    textColor={theme.colors.accent}
+                                    onPress={() => {
+                                        setIsSleepDialogVisible(false);
+                                        if (settings.voiceAction) speak("Закрито.");
+                                    }}
+                                >
+                                    Закрити
+                                </Button>
+                            )}
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
             </View>
         );
     }
@@ -372,6 +552,7 @@ const HomeScreen = () => {
                     rightIcons={rightIcons}
                     activeIcons={activeIcons}
                     onToggleIcon={toggleIconState}
+                    isLocked={disablePlayer}
                 />
 
                 <BookProgressSimple
@@ -382,29 +563,121 @@ const HomeScreen = () => {
                     onPress={handleStatusRequest}
                 />
 
-                <BookCover
-                    imageSource={book ? book.image : require('@/app/src/assets/images/frame.png')}
-                    accentColor={theme.colors.accent}
-                    isPlaying={status.playing}
-                    onTogglePlay={handleTogglePlay}
-                />
+                <View
+                    style={{ opacity: disablePlayer ? 0.5 : 1 }}
+                    pointerEvents={disablePlayer ? 'none' : 'auto'}
+                >
+                    <BookCover
+                        imageSource={book ? book.image : require('@/app/src/assets/images/frame.jpg')}
+                        accentColor={theme.colors.accent}
+                        isPlaying={status.playing}
+                        onTogglePlay={handleTogglePlay}
+                    />
+                </View>
 
-                <PlayerControls
-                    currentTime={status.currentTime}
-                    duration={status.duration ?? 0}
-                    theme={theme}
-                    chapters={book?.chapters || []}
-                    currentChapterIndex={chapterIndex}
-                    rate={speed}
-                    onChangeSpeed={handleChangeSpeed}
-                    onChapterSelect={(index) => setChapterIndex(index)}
-                    onSeek={handleSeek}
-                    onRewind={handleRewind}
-                    onForward={handleForward}
-                    onNextFile={handleNextChapter}
-                    onBackFile={handleBackChapter}
-                />
+                <View
+                    style={{ opacity: disablePlayer ? 0.5 : 1 }}
+                    pointerEvents={disablePlayer ? 'none' : 'auto'}
+                >
+                    <PlayerControls
+                        currentTime={status.currentTime}
+                        duration={status.duration ?? 0}
+                        theme={theme}
+                        chapters={book?.chapters || []}
+                        currentChapterIndex={chapterIndex}
+                        rate={speed}
+                        onChangeSpeed={handleChangeSpeed}
+                        onChapterSelect={(index) => setChapterIndex(index)}
+                        onSeek={handleSeek}
+                        onRewind={handleRewind}
+                        onForward={handleForward}
+                        onNextFile={handleNextChapter}
+                        onBackFile={handleBackChapter}
+                    />
+                </View>
+
             </ScrollView>
+
+            <Portal>
+                <Dialog style={{
+                    backgroundColor: theme.colors.surface
+                }}
+                    visible={visible}
+                    onDismiss={toggleAlert}
+                >
+                    <Dialog.Title>Повідомлення</Dialog.Title>
+                    <Dialog.Content>
+                        <Text variant="bodyMedium">На жаль, ця можливість ще недоступна. Ми працюємо над її додаванням у найближчих оновленнях.</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={toggleAlert}>Зрозуміло</Button>
+                    </Dialog.Actions>
+                </Dialog>
+
+                <Dialog
+                    visible={isSleepDialogVisible}
+                    onDismiss={() => setIsSleepDialogVisible(false)}
+                    style={{ backgroundColor: theme.colors.surface }}
+                >
+                    <Dialog.Title style={{ textAlign: 'center' }}>
+                        Таймер сну
+                    </Dialog.Title>
+
+                    <Dialog.Content>
+                        <View style={styles.timerGrid}>
+                            {[15, 30, 45, 60].map((min) => {
+                                const isActive = selectedMinutes === min;
+                                return (
+                                    <Pressable
+                                        key={min}
+                                        onPress={() => startSleepTimer(min)}
+                                        style={({ pressed }) => [
+                                            styles.timerBox,
+                                            {
+                                                backgroundColor: isActive ? theme.colors.accent : '#2C2C2E',
+                                                opacity: pressed ? 0.7 : 1,
+                                            },
+                                        ]}
+                                    >
+                                        <Text style={[styles.timerValue, { color: isActive ? '#000' : '#FFF' }]}>
+                                            {min}
+                                        </Text>
+                                        <Text style={[styles.timerUnit, { color: isActive ? '#000' : '#AAA' }]}>
+                                            хв
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </Dialog.Content>
+
+                    <Dialog.Actions style={{ justifyContent: 'center', paddingBottom: 15 }}>
+                        {sleepTimer !== null ? (
+                            <Button
+                                textColor={theme.colors.error}
+                                onPress={() => {
+                                    setSleepTimer(null);
+                                    setIsSleepDialogVisible(false);
+                                    setSelectedMinutes(null);
+                                    if (settings.voiceAction) speak("Таймер скинуто.");
+                                }}
+                            >
+                                Вимкнути таймер
+                            </Button>
+                        ) : (
+                            <Button
+                                textColor={theme.colors.accent}
+                                onPress={() => {
+                                    setIsSleepDialogVisible(false);
+                                    if (settings.voiceAction) speak("Закрито.");
+                                }}
+                            >
+                                Закрити
+                            </Button>
+                        )}
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </View>
     );
 }
@@ -412,12 +685,20 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
+
+    containerAlert: {
+        flex: 4,
+        alignItems: 'center',
+        paddingBottom: 5,
+    },
     container: {
         flex: 1,
-        alignItems: 'center',
-        paddingBottom: 5
+        paddingBottom: 5,
     },
-
+    centeredContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
     brogresBarBook: {
         width: '100%',
         justifyContent: 'center',
@@ -425,5 +706,27 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingLeft: 21,
         paddingRight: 21,
+    },
+    timerGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 10,
+    },
+    timerBox: {
+        width: '47%',
+        paddingVertical: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    timerValue: {
+        fontSize: 22,
+        fontWeight: 'bold',
+    },
+    timerUnit: {
+        fontSize: 12,
+        marginTop: -2,
     },
 });

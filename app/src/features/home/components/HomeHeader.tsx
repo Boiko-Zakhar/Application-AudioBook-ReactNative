@@ -1,16 +1,16 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import { Pressable, StyleSheet, Vibration, View } from 'react-native';
 import { IconItem } from '../types';
 
 interface HomeHeaderProps {
   leftIcons: IconItem[];
   rightIcons: IconItem[];
-  activeIcons: Record<string, boolean>; 
-  onToggleIcon: (id: string) => void;   
+  activeIcons: Record<string, boolean>;
+  onToggleIcon: (id: string) => void;
+  isLocked: boolean;
 }
 
-export const HomeHeader = ({ leftIcons, rightIcons, activeIcons, onToggleIcon }: HomeHeaderProps) => {
+export const HomeHeader = ({ leftIcons, rightIcons, activeIcons, onToggleIcon, isLocked }: HomeHeaderProps) => {
 
   const renderIcons = (icons: IconItem[]) => (
     icons.map((item) => {
@@ -18,16 +18,45 @@ export const HomeHeader = ({ leftIcons, rightIcons, activeIcons, onToggleIcon }:
       const CurrentIconComponent = isActive ? item.ActiveIcon : item.Icon;
       const currentFill = isActive ? item.activeFill : item.defaultFill;
 
+      if (item.id === 'lock') {
+        return (
+          <Pressable
+            key={item.id}
+            onPress={() => {
+              if (!isLocked) {
+                onToggleIcon(item.id);
+                item.onPress();
+              }
+            }}
+            onLongPress={() => {
+              if (isLocked) {
+                Vibration.vibrate(100);
+                onToggleIcon(item.id);
+                item.onPress();
+              }
+            }}
+            delayLongPress={1000}
+            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+          >
+            <CurrentIconComponent width={24} height={24} fill={currentFill} />
+          </Pressable>
+        );
+      }
+
       return (
-        <IconButton
+        <Pressable
           key={item.id}
-          icon={() => <CurrentIconComponent width={24} height={24} fill={currentFill} />}
           onPress={() => {
             onToggleIcon(item.id);
             item.onPress();
           }}
-          size={10}
-        />
+          style={({ pressed }) => [
+            styles.iconButton,
+            { opacity: pressed ? 0.6 : 1 }
+          ]}
+        >
+          <CurrentIconComponent width={24} height={24} fill={currentFill} />
+        </Pressable>
       );
     })
   );
@@ -56,6 +85,11 @@ const styles = StyleSheet.create({
   iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 10,
   },
+  iconButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });

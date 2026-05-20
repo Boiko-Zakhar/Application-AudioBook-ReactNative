@@ -1,5 +1,6 @@
 import { useSettings } from "@/app/src/context/SettingsContext";
 import { useTheme } from "@/app/src/context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer } from 'expo-audio';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -50,12 +51,12 @@ export default function Library() {
   const router = useRouter();
 
   const openPlayer = (book: Book) => {
-    router.push({
+    router.navigate({
       pathname: "/Home",
       params: { bookData: JSON.stringify(book) }
     });
   };
-  
+
   useFocusEffect(
     useCallback(() => {
       if (settings.voiceAction) {
@@ -67,41 +68,101 @@ export default function Library() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={{ 
-          color: theme.colors.onSurface, 
-          fontSize: getFontSize(20), 
-          lineHeight: getFontSize(26),
-          letterSpacing: -1 
-        }}>
+        <Text
+          accessibilityRole="header"
+          style={{
+            color: theme.colors.onSurface,
+            fontSize: getFontSize(20),
+            lineHeight: getFontSize(26),
+            letterSpacing: -1,
+          }}>
           Моя Бібліотека
         </Text>
-        <Button
-          style={{ backgroundColor: theme.colors.accent }}
-          textColor={theme.colors.background}
-          labelStyle={{ fontSize: getFontSize(14) }}
-          mode="contained"
-          onPress={() => {
-            if (settings.voiceAction) {
-              speak("Додати книгу");
-            }
-            addBook();
-          }}
-          icon="plus"
-        >
-          Додати
-        </Button>
-      </View>
 
+        {settings.fontScale < 1.5 ? (
+          <Button
+            style={{ backgroundColor: theme.colors.accent }}
+            textColor={theme.colors.background}
+            labelStyle={{ fontSize: getFontSize(14) }}
+            mode="contained"
+            onPress={() => {
+              if (settings.voiceAction) {
+                speak("Додати книгу");
+              }
+              addBook();
+            }}
+            icon="plus"
+            accessibilityLabel="Додати нову книгу до бібліотеки"
+          >
+            Додати
+          </Button>
+        ) :
+          (
+            <IconButton
+              icon="plus"
+              iconColor={theme.colors.accent}
+              size={24}
+              onPress={() => {
+                if (settings.voiceAction) {
+                  speak("Додати книгу");
+                }
+                addBook();
+              }}
+              accessibilityLabel="Додати нову книгу до бібліотеки"
+            />
+          )}
+      </View>
       <FlatList
         data={books}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={[
+          { paddingBottom: 20 },
+          books?.length === 0 && { flexGrow: 1 }
+        ]}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+
+        ListEmptyComponent={
+          <View
+            accessibilityLiveRegion="assertive"
+            style={[styles.centeredContent]}
+          >
+            <Ionicons
+              name="library-outline"
+              size={64}
+              color={theme.text.muted.color}
+              style={{ marginBottom: 16, opacity: 0.5 }}
+              importantForAccessibility="no"
+            />
+            <Text style={{
+              color: theme.text.muted.color,
+              fontSize: getFontSize(18),
+              textAlign: 'center',
+              paddingHorizontal: 40
+            }}>
+              У вашій бібліотеці поки порожньо
+            </Text>
+            <Button
+              mode="contained"
+              onPress={() => {
+                if (settings.voiceAction) {
+                  speak("Додати книгу");
+                }
+                addBook();
+              }}
+              style={{ marginTop: 24, backgroundColor: theme.colors.accent }}
+              textColor={theme.colors.background}
+            >
+              Додати першу книгу
+            </Button>
+          </View>
+        }
+
         renderItem={({ item }) => (
           <View style={styles.bookItemWrapper}>
             <TouchableOpacity
               style={[
-                styles.bookItem, 
-                { backgroundColor: `${theme.colors.muted}40` } 
+                styles.bookItem,
+                { backgroundColor: `${theme.colors.muted}40` }
               ]}
               onPress={() => {
                 if (settings.voiceAction) {
@@ -117,37 +178,37 @@ export default function Library() {
                 />
               </View>
               <View style={styles.bookInfo}>
-                <Text 
+                <Text
                   numberOfLines={2}
-                  style={{ 
-                    color: theme.colors.onSurface, 
-                    fontSize: getFontSize(16), 
+                  style={{
+                    color: theme.colors.onSurface,
+                    fontSize: getFontSize(16),
                     fontWeight: '600',
                     lineHeight: getFontSize(20)
                   }}
                 >
                   {item.title}
                 </Text>
-                <Text style={{ 
-                  color: theme.colors.onSurfaceVariant, 
+                <Text style={{
+                  color: theme.colors.onSurfaceVariant,
                   fontSize: getFontSize(12),
-                  marginTop: 4 
+                  marginTop: 4
                 }}>
                   Аудіокнига
                 </Text>
               </View>
             </TouchableOpacity>
 
-            <IconButton 
-              icon="trash-can-outline" 
+            <IconButton
+              icon="trash-can-outline"
               iconColor={theme.colors.onSurface}
-              size={24} 
+              size={24}
               onPress={() => {
                 if (settings.voiceAction) {
                   speak(`Видалено книгу: ${item.title}`);
                 }
                 removeBook(item.id);
-              }} 
+              }}
             />
           </View>
         )}
@@ -158,8 +219,13 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  centeredContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   imageBook: {
-    width: 100, 
+    width: 100,
     height: 100,
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
@@ -169,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 15,
     marginTop: 35,
   },
   bookItemWrapper: {
@@ -183,12 +249,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    minHeight: 100, 
+    minHeight: 100,
   },
   iconContainer: { alignSelf: 'stretch' },
-  bookInfo: { 
-    flex: 1, 
+  bookInfo: {
+    flex: 1,
     padding: 12,
-    justifyContent: 'center' 
+    justifyContent: 'center'
   },
 });
