@@ -1,5 +1,3 @@
-global.Buffer = global.Buffer || require('buffer').Buffer;
-
 import IconCommunity from "@/app/src/assets/images/IconCommunity";
 import IconHome from "@/app/src/assets/images/IconHome";
 import IconLibrary from "@/app/src/assets/images/IconLibrary";

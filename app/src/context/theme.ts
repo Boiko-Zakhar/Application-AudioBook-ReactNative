@@ -81,7 +81,7 @@ export const lightColors = {
   secondary: "#2E7D32",
   surface: "#E8F5E9",
   onSurface: "#000000",
-  onSurfaceVariant: "#9E9E9E",
+  onSurfaceVariant: "#546E7A", //9E9E9E
   error: "#D72121",
 };
 
@@ -90,8 +90,8 @@ export const darkColors = {
   secondary: "#64B5F6",
   surface: "#1C1C1C",
   onSurface: "#FFFFFF",
-  onSurfaceVariant: "#9E9E9E",
-  error: "#D72121",
+  onSurfaceVariant: "#B0BEC5", //9E9E9E
+  error: "#EF5350", //"#D72121"
 };
 
 export const blueColors = {
@@ -99,21 +99,22 @@ export const blueColors = {
   secondary: "#64B5F6",
   surface: "#FFFFFF",
   onSurface: "#212121",
-  onSurfaceVariant: "#9E9E9E",
+  onSurfaceVariant: "#5F6368", //"#9E9E9E",
   error: "#D72121",
 };
 
 export const inclusiveColors = {
   primary: "#004BA0",          
-  secondary: "#5D4037",        
+  secondary: "#5D4037",          
   surface: "#FDF5E6",          
   onSurface: "#212121",        
-  onSurfaceVariant: "#4E4E4E",
+  onSurfaceVariant: "#424242",
   error: "#B00020",
 };
 
 export const lightThemeBase = createTheme(lightColors, false, false);
 export const darkThemeBase = createTheme(darkColors, true, false);
-export const blueThemeBase = createTheme(darkColors, false, false);
+export const blueThemeBase = createTheme(blueColors, false, false);
+export const inclusiveThemeBase = createTheme(inclusiveColors, false, false);
 export { createTheme };
 

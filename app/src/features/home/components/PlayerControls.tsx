@@ -75,6 +75,9 @@ export const PlayerControls = ({
                                     speak("Назад 1 хвилина");
                                 }
                             }}
+                            accessible={true}
+                            accessibilityLabel="Перемотати назад на одну хвилину"
+                            accessibilityHint="Повертає відтворення аудіо на одну хвилину назад"
                         />
                         <Text style={{
                             color: theme.colors.onSurfaceVariant,
@@ -93,6 +96,10 @@ export const PlayerControls = ({
                                     speak("Назад 15 секунд");
                                 }
                             }}
+
+                            accessible={true}
+                            accessibilityLabel="Перемотати назад на п'ятнадцять секунд"
+                            accessibilityHint="Повертає відтворення аудіо на п'ятнадцять секунд назад"
                         />
                         <Text style={{
                             color: theme.colors.onSurfaceVariant,
@@ -116,6 +123,10 @@ export const PlayerControls = ({
                             fontWeight: '400',
                             color: theme.colors.textBlack
                         }}
+
+                        accessible={true}
+                        accessibilityLabel={`Швидкість відтворення. Зараз: ${rate}`}
+                        accessibilityHint="Змінює швидкість читання аудіокниги"
                     >
                         {rate}X
                     </Button>
@@ -132,6 +143,10 @@ export const PlayerControls = ({
                                     speak("Вперед 15 секунд");
                                 }
                             }}
+
+                            accessible={true}
+                            accessibilityLabel="Перемотати вперед на п'ятнадцять секунд"
+                            accessibilityHint="Перемотує відтворення аудіо на п'ятнадцять секунд вперед"
                         />
                         <Text style={{
                             color: theme.colors.onSurfaceVariant,
@@ -151,6 +166,10 @@ export const PlayerControls = ({
                                     speak("Вперед 1 хвилина");
                                 }
                             }}
+
+                            accessible={true}
+                            accessibilityLabel="Перемотати вперед на одну хвилину"
+                            accessibilityHint="Перемотує відтворення аудіо на одну хвилину вперед"
                         />
                         <Text style={{
                             color: theme.colors.onSurfaceVariant,
@@ -180,6 +199,30 @@ export const PlayerControls = ({
                     minimumTrackTintColor={theme.colors.accent}
                     thumbTintColor={theme.colors.accent}
                     maximumTrackTintColor={theme.colors.textGreen}
+
+                    accessible={true}
+                    accessibilityRole="adjustable"
+                    accessibilityLabel="Повзунок часу відтворення"
+                    accessibilityValue={{
+                        min: 0,
+                        max: duration ?? 1,
+                        now: currentTime,
+                        text: `Поточний час: ${formatTime(currentTime)} з ${formatTime(duration)}`
+                    }}
+                    onAccessibilityAction={(event) => {
+                        switch (event.nativeEvent.actionName) {
+                            case 'increment':
+                                onSeek(Math.min(currentTime + 10, duration));
+                                break;
+                            case 'decrement':
+                                onSeek(Math.max(currentTime - 10, 0));
+                                break;
+                        }
+                    }}
+                    accessibilityActions={[
+                        { name: 'increment', label: 'вперед на 10 секунд' },
+                        { name: 'decrement', label: 'назад на 10 секунд' },
+                    ]}
                 />
                 <View style={styles.time}>
                     <Text style={{
@@ -237,6 +280,12 @@ export const PlayerControls = ({
                         textColor={theme.colors.onSurface}
                         labelStyle={{ fontSize: getFontSize(15), fontWeight: '600' }}
                         onPress={showModal}
+
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Поточний розділ: ${chapters[currentChapterIndex]?.title || 'Виберіть розділ'}`}
+                        accessibilityHint="Відкриває список усіх розділів для вибору"
+                        accessibilityState={{ expanded: visible }}
                     >
                         {chapters[currentChapterIndex]?.title || 'Виберіть розділ'}
                     </Button>
