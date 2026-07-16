@@ -1,55 +1,90 @@
-<img width="286" height="571" alt="image" src="https://github.com/user-attachments/assets/8f90e8b7-f920-4a3c-a7ef-abd3b466fd23" />
-<img width="286" height="568" alt="image" src="https://github.com/user-attachments/assets/1458d604-92c3-4bb6-a9d2-b95a6bdf26d5" />
-<img width="289" height="571" alt="image" src="https://github.com/user-attachments/assets/196807e5-cb1f-4588-a62d-54bfe7c9d960" />
+# 📖 Inclusive Audiobook Player (React Native / Expo)
 
+[![React Native](https://img.shields.io/badge/React_Native-0.74+-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-Managed_Workflow-000000?logo=expo&logoColor=white)](https://expo.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-# Welcome to your Expo app 👋
+[cite_start]An inclusive, offline-first mobile application designed specifically for individuals with visual impairments, dyslexia, and motor challenges[cite: 61]. [cite_start]Built using the React Native framework and Expo SDK, this app demonstrates that digital accessibility (WCAG 2.1) can be beautifully integrated with a clean, high-performance user interface[cite: 62].
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+---
 
-## Get started
+## 🌟 Key Features
 
-1. Install dependencies
+### [cite_start]♿ Real Accessibility (WCAG 2.1 & DSTU EN 301549:2022) [cite: 63]
+* [cite_start]**Dyslexia-friendly Typography:** Complete integration of the **OpenDyslexic** font family[cite: 63]. [cite_start]Powered by a custom `useTypography` hook [cite: 64][cite_start], the app dynamically scales font sizes and automatically adjusts **line spacing to 1.6** (from the standard 1.3) when the font is enabled, dramatically improving readability[cite: 64].
+* [cite_start]**High-Contrast Theme:** An exclusive high-contrast UI mode [cite: 65][cite_start], rigorously verified against the **WebAIM Contrast Checker** (achieving a contrast ratio above the strict WCAG AA standard)[cite: 65].
+* [cite_start]**Active Voice Feedback:** Built-in screen reader adaptation using native `accessibilityLabel` properties[cite: 66]. [cite_start]Features a dynamic event-driven voice guidance helper that speaks actions (e.g., *"Settings Screen Opened"*, *"Special Theme Enabled"*) via the native `speak()` API, providing clear navigation feedback without visual control[cite: 67].
 
-   ```bash
-   npm install
-   ```
+### 🛠️ Advanced Engineering & Optimization
+* [cite_start]**Memory Leak & OutOfMemory (OOM) Prevention:** Original file-parsing approaches load entire heavy MP3/M4B audiobooks into RAM, causing crashes[cite: 68]. [cite_start]This app resolves this by implementing a **data segmentation mechanism**: using `expo-file-system` (`readAsStringAsync`), the app reads only the initial **1.5 MB** in Base64[cite: 69]. [cite_start]It decodes the binary buffer and extracts ID3 tags/album art via `jsmediatags` safely and efficiently[cite: 70].
+* [cite_start]**Smart Storage Management:** Designed an import pipeline utilizing `expo-document-picker`[cite: 71]. [cite_start]To prevent cache pollution and excessive memory usage, imported books are physically moved from the temporary cache directory to the application's secure permanent documents directory (`/AudioBooks`)[cite: 72].
+* [cite_start]**Custom Audio Engine:** Uses `expo-audio` to manage media sessions, featuring customized background playback, custom playback speeds (1.0x, 1.2x, 1.5x), a sleep timer, and a special screen-lock switch ("lock icon") to prevent accidental touch gestures[cite: 73].
+* [cite_start]**Silent-Mode Bypass:** Configured the audio session with `playsInSilentMode: true` to ensure reliable audiobook playback even if the physical device switch is set to silent[cite: 74].
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Tech Stack & Architecture
 
-In the output, you'll find options to open the app in a
+[cite_start]The application is built on a clean, decoupled modular architecture[cite: 75]:
+                              +-------------------+
+                              |     Expo SDK      |
+                              +---------+---------+
+                                        |
+                              +---------v---------+
+                              |   React Native    |
+                              +---------+---------+
+                                        |
+                              +---------v---------+
+                              |      Node.js      |
+                              +-------------------+
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+                              * **Framework:** React Native (Expo Managed Workflow) [cite: 75]
+* **Language:** TypeScript (Strict Type-Safety utilizing Interfaces, Types, and Generics) [cite: 75]
+* **State Management:** React Context API (`ThemeContext`, `SettingsContext`)[cite: 75]. This lightweight native approach completely avoids the overhead of massive state libraries like Redux, maintaining a tiny final bundle size while optimizing re-renders via `useMemo`[cite: 76].
+* **Navigation:** File-system based routing via Expo Router (`(tabs)`) [cite: 77]
+* **UI Foundation:** React Native Paper (extended custom themes) [cite: 77]
+* **Core Native Modules:** `expo-audio`, `expo-file-system`, `expo-document-picker`, `expo-crypto` [cite: 77]
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 📂 Directory Structure
 
-When you're ready, run:
-
-```bash
-npm run reset-project
+```filepath
+/
+├── app/                  # File-system routing and screen layouts (Expo Router)
+│   └── (tabs)/           # Core tab navigation: Library, Player, Community, Settings
+└── src/
+    ├── assets/           # Fonts (OpenDyslexic), localized icons, static placeholders
+    ├── context/          # Global State providers (ThemeContext, SettingsContext)
+    ├── features/         # Modular feature folders (isolation of logic and UI)
+    ├── hooks/            # Reusable hooks (useTypography, useLibrary, etc.)
+    └── theme/            # theme.ts (Central design tokens and typography scaling)
 ```
+## 🚀 Getting Started### Prerequisites
+Make sure you have [Node.js LTS](https://nodejs.org/) installed on your machine.### Installation1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/Boiko-Zakhar/Application-AudioBook-ReactNative.git](https://github.com/Boiko-Zakhar/Application-AudioBook-ReactNative.git)
+```
+Navigate to the project directory:
+```Bash
+cd Application-AudioBook-ReactNative
+```
+Install dependencies:
+```Bash
+npm install
+```
+Running the App Locally
+Start the Expo development server:
+```Bash
+npx expo start
+```
+Launch on a device or emulator:
+Scan the QR code displayed in your terminal using the Expo Go app (Android / iOS).
+Press a to open the project in an Android Emulator.
+Press i to open the project in an iOS Simulator.
+📜 Standards & References
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+WCAG 2.1 Guidelines: Web Content Accessibility Guidelines (Priority standards for Contrast, Adaptability, and Readability).
+DSTU EN 301549:2022: State Information Technology Accessibility Standard of Ukraine (harmonized with European standards for ICT accessibility).
+🎓 Developed by Zakhar Boiko as a graduation diploma thesis (2026).
